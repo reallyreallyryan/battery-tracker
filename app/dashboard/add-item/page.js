@@ -143,18 +143,27 @@ const startCamera = useCallback(async () => {
     setIsLoading(true);
     
     try {
-      // TODO: Save to database
-      console.log('Saving item:', {
-        ...formData,
-        image: capturedImage,
-        createdAt: new Date().toISOString()
-      });
-      
-      // For now, just simulate saving
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      alert('Item saved successfully!');
-      router.push('/dashboard');
+        // Save to database via API
+        const response = await fetch('/api/items', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...formData,
+            image: capturedImage,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to save item');
+        }
+        
+        const result = await response.json();
+        console.log('Item saved:', result);
+        
+        alert('Item saved successfully!');
+        router.push('/dashboard');
       
     } catch (error) {
       console.error('Error saving item:', error);
