@@ -39,7 +39,7 @@ export default async function HomePage() {
         </h1>
         
         <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-          Take photos of your devices, track battery life, and get smart alerts when it's time to replace them. 
+          Take photos of your devices, track battery life, and get smart alerts when it&apos;s time to replace them. 
           From smoke detectors to TV remotes - keep your home powered and safe.
         </p>
 
@@ -220,7 +220,7 @@ export default async function HomePage() {
             Ready to Never Miss a Battery Change?
           </h2>
           <p className="text-xl mb-8 text-blue-100">
-            Join others who've already taken control of their battery management
+            Join others who&apos;ve already taken control of their battery management
           </p>
           
           {!session ? (
