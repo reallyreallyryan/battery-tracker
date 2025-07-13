@@ -7,7 +7,7 @@ const config = {
   appDescription:
     "Never forget to change your batteries again",
   // REQUIRED (no https://, not trialing slash at the end, just the naked domain)
-  domainName: "shipfa.st",
+  domainName: "battery-tracker-one.vercel.app",
   crisp: {
     // Crisp website ID. IF YOU DON'T USE CRISP: just remove this => Then add a support email in this config file (resend.supportEmail) otherwise customer support won't work.
     id: "",
@@ -72,9 +72,9 @@ const config = {
   },
   resend: {
     // REQUIRED — Email 'From' field to be used when sending magic login links
-    fromNoReply: `BatteryTracker <noreply@resend.dev>`,
+    fromNoReply: `BatteryTracker <onboarding@resend.dev>`,
     // REQUIRED — Email 'From' field to be used when sending other emails, like abandoned carts, updates etc..
-    fromAdmin: `BatteryTracker Admin <marc@resend.dev>`,
+    fromAdmin: `BatteryTracker Admin <onboarding@resend.dev>`,
     // Email shown to customer if need support. Leave empty if not needed => if empty, set up Crisp above, otherwise you won't be able to offer customer support."
     supportEmail: "nectarstack@gmail.com",
   },
