@@ -1,5 +1,4 @@
 import { Inter } from "next/font/google";
-import { Providers } from "./providers";
 import config from "@/config";
 import "./globals.css";
 
@@ -63,7 +62,7 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        {children}
       </body>
     </html>
   );
