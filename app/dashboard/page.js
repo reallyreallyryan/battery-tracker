@@ -8,6 +8,8 @@ export default function Dashboard() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ open: false, item: null });
+  const [deleting, setDeleting] = useState(false);
 
   // Fetch battery items on component mount
   useEffect(() => {
@@ -58,6 +60,48 @@ export default function Dashboard() {
       console.error('Error updating item:', err);
       alert('Error updating item');
     }
+  };
+
+  // Handle delete button click
+  const handleDeleteClick = (item) => {
+    setDeleteModal({ open: true, item });
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.item) return;
+
+    try {
+      setDeleting(true);
+      const response = await fetch('/api/items', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: deleteModal.item._id
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete item');
+      }
+
+      // Close modal and refresh items
+      setDeleteModal({ open: false, item: null });
+      fetchItems();
+      alert('Device deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting item:', err);
+      alert('Error deleting item');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Close delete modal
+  const handleDeleteCancel = () => {
+    setDeleteModal({ open: false, item: null });
   };
 
   // Get status info for display
@@ -159,9 +203,18 @@ export default function Dashboard() {
                   return (
                     <div 
                       key={item._id} 
-                      className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 border-l-4 ${statusInfo.color} border border-gray-100`}
+                      className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 border-l-4 ${statusInfo.color} border border-gray-100 relative`}
                     >
-                      <div className="flex justify-between items-start mb-4">
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDeleteClick(item)}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                        title="Delete device"
+                      >
+                        🗑️
+                      </button>
+
+                      <div className="flex justify-between items-start mb-4 pr-8">
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-1">
                             {item.name}
@@ -230,6 +283,41 @@ export default function Dashboard() {
         {/* PWA Install Button */}
         <InstallPWA />
       </section>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="text-center">
+              <div className="text-4xl mb-4">🗑️</div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Delete Device?
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete <strong>{deleteModal.item?.name}</strong>? 
+                This action cannot be undone.
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDeleteCancel}
+                  disabled={deleting}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={deleting}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -198,3 +198,57 @@ export async function PATCH(request) {
     );
   }
 }
+
+// Add this DELETE function to your existing /app/api/items/route.js file
+// Place it after your PATCH function
+
+// DELETE - Remove a battery item
+export async function DELETE(request) {
+  try {
+    // Check if user is authenticated
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Parse the request body to get itemId
+    const body = await request.json();
+    const { itemId } = body;
+
+    if (!itemId) {
+      return NextResponse.json(
+        { error: "Missing item ID" },
+        { status: 400 }
+      );
+    }
+
+    // Connect to MongoDB
+    const client = await clientPromise;
+    const db = client.db();
+    const collection = db.collection("batteryItems");
+
+    // Delete the item (only if it belongs to this user)
+    const result = await collection.deleteOne({
+      _id: new ObjectId(itemId),
+      userId: session.user.id 
+    });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { error: "Item not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Device deleted successfully!" 
+    });
+  } catch (error) {
+    console.error("Error deleting item:", error);
+    return NextResponse.json(
+      { error: "Failed to delete item" },
+      { status: 500 }
+    );
+  }
+}
