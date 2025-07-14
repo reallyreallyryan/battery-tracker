@@ -9,8 +9,14 @@ const withPWA = require('next-pwa')({
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['lh3.googleusercontent.com'], // For user profile images if needed
+    domains: ['lh3.googleusercontent.com'],
   },
+  // Add this for proper sitemap generation
+  trailingSlash: false,
+  async rewrites() {
+    return [];
+  },
+  env: {
+    NEXT_PUBLIC_DOMAIN: 'https://voltahome.app'
+  }
 };
-
-module.exports = withPWA(nextConfig);
