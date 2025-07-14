@@ -12,24 +12,70 @@ export default function AddItem() {
   const [capturedImage, setCapturedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Form data
+  // Form data with new category field
   const [formData, setFormData] = useState({
     name: '',
+    category: 'battery', // Default to battery for existing users
     batteryType: 'AA',
     dateLastChanged: new Date().toISOString().split('T')[0],
     expectedDuration: 180 // Default for AA batteries
   });
 
-  // Battery type options with expected durations (in days)
-  const batteryTypes = {
-    'AA': 180,
-    'AAA': 120,
-    '9V': 365,
-    'CR2032': 730,
-    'C': 300,
-    'D': 400,
-    'CR123A': 365,
-    'Other': 180
+  // Categories with their maintenance types and expected durations
+  const categories = {
+    battery: {
+      name: "🔋 Batteries & Power",
+      types: {
+        'AA': 180,
+        'AAA': 120,
+        '9V': 365,
+        'CR2032': 730,
+        'C': 300,
+        'D': 400,
+        'CR123A': 365,
+        'Other': 180
+      },
+      unit: "days",
+      examples: "Smoke detectors, remotes, flashlights"
+    },
+    hvac: {
+      name: "🌬️ HVAC & Air Quality", 
+      types: {
+        'AC Filter (1" Basic)': 30,
+        'AC Filter (1" Pleated)': 90,
+        'AC Filter (4" Pleated)': 180,
+        'Furnace Filter': 180,
+        'Air Purifier Filter': 365,
+        'Other HVAC': 90
+      },
+      unit: "days",
+      examples: "Air conditioning, heating, air purifiers"
+    },
+    appliance: {
+      name: "🏠 Appliance Maintenance",
+      types: {
+        'Dishwasher Filter': 180,
+        'Dryer Vent': 365,
+        'Garbage Disposal': 180,
+        'Refrigerator Filter': 180,
+        'Other Appliance': 180
+      },
+      unit: "days", 
+      examples: "Kitchen appliances, laundry, disposal"
+    }
+  };
+
+  // Get current category's types
+  const getCurrentTypes = () => {
+    return categories[formData.category]?.types || {};
+  };
+
+  // Get current maintenance type (battery type for batteries, filter type for HVAC, etc.)
+  const getCurrentType = () => {
+    if (formData.category === 'battery') {
+      return formData.batteryType;
+    }
+    return formData.maintenanceType || Object.keys(getCurrentTypes())[0];
   };
 
 // Start camera
@@ -117,9 +163,25 @@ const startCamera = useCallback(async () => {
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
       
-      // Auto-update expected duration when battery type changes
-      if (name === 'batteryType') {
-        newData.expectedDuration = batteryTypes[value];
+      // Update expected duration when category or type changes
+      if (name === 'category') {
+        // Reset to first option in new category
+        const newTypes = categories[value]?.types || {};
+        const firstType = Object.keys(newTypes)[0];
+        const firstDuration = newTypes[firstType];
+        
+        if (value === 'battery') {
+          newData.batteryType = firstType;
+          delete newData.maintenanceType;
+        } else {
+          newData.maintenanceType = firstType;
+          delete newData.batteryType;
+        }
+        newData.expectedDuration = firstDuration;
+      } else if (name === 'batteryType' || name === 'maintenanceType') {
+        // Update duration based on selected type
+        const types = getCurrentTypes();
+        newData.expectedDuration = types[value];
       }
       
       return newData;
@@ -174,7 +236,7 @@ const startCamera = useCallback(async () => {
   };
 
   return (
-    <main className="min-h-screen p-4 pb-24 bg-gray-50">
+    <main className="min-h-screen p-4 pb-24 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -184,12 +246,12 @@ const startCamera = useCallback(async () => {
           >
             <span>←</span> Back to Dashboard
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Add New Device</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Add New Item</h1>
           <div></div>
         </div>
 
         {/* Camera Section */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
           <h2 className="text-lg font-semibold mb-4">📷 Take a Photo</h2>
           
           {!isCameraActive && !capturedImage && (
@@ -200,7 +262,7 @@ const startCamera = useCallback(async () => {
               <button
                 onClick={startCamera}
                 disabled={isLoading}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50"
               >
                 {isLoading ? 'Starting Camera...' : 'Start Camera'}
               </button>
@@ -257,39 +319,65 @@ const startCamera = useCallback(async () => {
         </div>
 
         {/* Form Section */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 space-y-4">
-          <h2 className="text-lg font-semibold mb-4">📝 Device Details</h2>
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 space-y-4">
+          <h2 className="text-lg font-semibold mb-4">📝 Item Details</h2>
           
+          {/* Category Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category *
+            </label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              {Object.entries(categories).map(([key, cat]) => (
+                <option key={key} value={key}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {categories[formData.category]?.examples}
+            </p>
+          </div>
+
           {/* Item Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Device Name *
+              Item Name *
             </label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              placeholder="e.g., TV Remote, Game Controller"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={formData.category === 'battery' ? 'e.g., TV Remote, Game Controller' : 
+                          formData.category === 'hvac' ? 'e.g., Living Room AC, Basement Furnace' :
+                          'e.g., Kitchen Dishwasher, Dryer Vent'}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
             />
           </div>
 
-          {/* Battery Type */}
+          {/* Maintenance Type (Battery Type for batteries, Filter Type for HVAC, etc.) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Battery Type
+              {formData.category === 'battery' ? 'Battery Type' : 
+               formData.category === 'hvac' ? 'Filter/Component Type' : 
+               'Maintenance Type'}
             </label>
             <select
-              name="batteryType"
-              value={formData.batteryType}
+              name={formData.category === 'battery' ? 'batteryType' : 'maintenanceType'}
+              value={getCurrentType()}
               onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
-              {Object.keys(batteryTypes).map(type => (
+              {Object.entries(getCurrentTypes()).map(([type, duration]) => (
                 <option key={type} value={type}>
-                  {type} ({batteryTypes[type]} days expected life)
+                  {type} ({duration} days expected life)
                 </option>
               ))}
             </select>
@@ -298,14 +386,14 @@ const startCamera = useCallback(async () => {
           {/* Date Last Changed */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date Last Changed
+              Date Last {formData.category === 'battery' ? 'Changed' : 'Serviced/Replaced'}
             </label>
             <input
               type="date"
               name="dateLastChanged"
               value={formData.dateLastChanged}
               onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
             />
           </div>
@@ -322,7 +410,7 @@ const startCamera = useCallback(async () => {
               onChange={handleInputChange}
               min="1"
               max="3650"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
@@ -332,7 +420,7 @@ const startCamera = useCallback(async () => {
             disabled={isLoading || !capturedImage}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Saving...' : '💾 Save Device'}
+            {isLoading ? 'Saving...' : '💾 Save Item'}
           </button>
         </form>
       </div>

@@ -74,7 +74,7 @@ export async function GET() {
   }
 }
 
-// POST - Create a new battery item
+// POST - Create a new item (updated to handle categories)
 export async function POST(request) {
   try {
     // Check if user is authenticated
@@ -85,12 +85,35 @@ export async function POST(request) {
 
     // Parse the request body
     const body = await request.json();
-    const { name, batteryType, dateLastChanged, expectedDuration, image } = body;
+    const { 
+      name, 
+      category = 'battery', // Default to battery for backwards compatibility
+      batteryType, 
+      maintenanceType,
+      dateLastChanged, 
+      expectedDuration, 
+      image 
+    } = body;
 
     // Validate required fields
-    if (!name || !batteryType || !dateLastChanged || !image) {
+    if (!name || !dateLastChanged || !image) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields: name, dateLastChanged, image" },
+        { status: 400 }
+      );
+    }
+
+    // Determine the maintenance type based on category
+    let itemType;
+    if (category === 'battery') {
+      itemType = batteryType || 'Other';
+    } else {
+      itemType = maintenanceType || 'Other';
+    }
+
+    if (!itemType) {
+      return NextResponse.json(
+        { error: "Missing maintenance/battery type" },
         { status: 400 }
       );
     }
@@ -98,19 +121,32 @@ export async function POST(request) {
     // Connect to MongoDB
     const client = await clientPromise;
     const db = client.db();
-    const collection = db.collection("batteryItems");
+    const collection = db.collection("batteryItems"); // Keep same collection name for now
 
-    // Create the item document
+    // Create the item document with new category structure
     const newItem = {
       userId: session.user.id,
       name: name.trim(),
-      batteryType,
+      category: category,
+      
+      // Store both old and new fields for backwards compatibility
+      batteryType: category === 'battery' ? itemType : undefined,
+      maintenanceType: category !== 'battery' ? itemType : undefined,
+      itemType: itemType, // Unified field for easier querying
+      
       dateLastChanged: new Date(dateLastChanged),
       expectedDuration: parseInt(expectedDuration) || 180,
       image, // Base64 image data
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
+    // Clean up undefined fields
+    Object.keys(newItem).forEach(key => {
+      if (newItem[key] === undefined) {
+        delete newItem[key];
+      }
+    });
 
     // Insert into database
     const result = await collection.insertOne(newItem);

@@ -11,7 +11,23 @@ export default function Dashboard() {
   const [deleteModal, setDeleteModal] = useState({ open: false, item: null });
   const [deleting, setDeleting] = useState(false);
 
-  // Fetch battery items on component mount
+  // Category definitions for display
+  const categories = {
+    battery: {
+      name: "🔋 Batteries & Power",
+      color: "emerald"
+    },
+    hvac: {
+      name: "🌬️ HVAC & Air Quality", 
+      color: "blue"
+    },
+    appliance: {
+      name: "🏠 Appliance Maintenance",
+      color: "purple"
+    }
+  };
+
+  // Fetch items on component mount
   useEffect(() => {
     fetchItems();
   }, []);
@@ -35,8 +51,8 @@ export default function Dashboard() {
     }
   };
 
-  // Handle "battery changed" button click
-  const handleBatteryChanged = async (itemId) => {
+  // Handle "maintenance completed" button click
+  const handleMaintenanceCompleted = async (itemId) => {
     try {
       const response = await fetch('/api/items', {
         method: 'PATCH',
@@ -45,7 +61,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           itemId,
-          action: 'batteryChanged'
+          action: 'batteryChanged' // Keep same action for backwards compatibility
         })
       });
 
@@ -53,8 +69,7 @@ export default function Dashboard() {
         throw new Error('Failed to update item');
       }
 
-      alert('Battery change date updated!');
-      // Refresh the items list
+      alert('Maintenance date updated!');
       fetchItems();
     } catch (err) {
       console.error('Error updating item:', err);
@@ -87,10 +102,9 @@ export default function Dashboard() {
         throw new Error('Failed to delete item');
       }
 
-      // Close modal and refresh items
       setDeleteModal({ open: false, item: null });
       fetchItems();
-      alert('Device deleted successfully!');
+      alert('Item deleted successfully!');
     } catch (err) {
       console.error('Error deleting item:', err);
       alert('Error deleting item');
@@ -104,6 +118,20 @@ export default function Dashboard() {
     setDeleteModal({ open: false, item: null });
   };
 
+  // Get category info for an item
+  const getCategoryInfo = (item) => {
+    const category = item.category || 'battery'; // Default to battery for backwards compatibility
+    return categories[category] || categories.battery;
+  };
+
+  // Get maintenance type display
+  const getMaintenanceType = (item) => {
+    if (item.category === 'battery' || !item.category) {
+      return item.batteryType || item.itemType || 'Unknown';
+    }
+    return item.maintenanceType || item.itemType || 'Unknown';
+  };
+
   // Get status info for display
   const getStatusInfo = (item) => {
     switch (item.status) {
@@ -113,7 +141,7 @@ export default function Dashboard() {
           bgColor: 'bg-emerald-100',
           textColor: 'text-emerald-800',
           buttonColor: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-          buttonText: '✅ Batteries Changed',
+          buttonText: '✅ Maintenance Done',
           label: 'Good'
         };
       case 'warning':
@@ -122,7 +150,7 @@ export default function Dashboard() {
           bgColor: 'bg-amber-100',
           textColor: 'text-amber-800',
           buttonColor: 'bg-amber-100 hover:bg-amber-200 text-amber-800',
-          buttonText: '⚠️ Consider Changing',
+          buttonText: '⚠️ Consider Servicing',
           label: 'Check Soon'
         };
       case 'replace':
@@ -131,8 +159,8 @@ export default function Dashboard() {
           bgColor: 'bg-rose-100',
           textColor: 'text-rose-800',
           buttonColor: 'bg-rose-100 hover:bg-rose-200 text-rose-800',
-          buttonText: '🔴 CHANGE NOW!',
-          label: 'Replace!'
+          buttonText: '🔴 SERVICE NOW!',
+          label: 'Service!'
         };
       default:
         return {
@@ -140,11 +168,21 @@ export default function Dashboard() {
           bgColor: 'bg-gray-100',
           textColor: 'text-gray-800',
           buttonColor: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-          buttonText: '✅ Batteries Changed',
+          buttonText: '✅ Maintenance Done',
           label: 'Unknown'
         };
     }
   };
+
+  // Group items by category
+  const groupedItems = items.reduce((acc, item) => {
+    const category = item.category || 'battery';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(item);
+    return acc;
+  }, {});
 
   return (
     <main className="min-h-screen p-6 pb-24 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -155,11 +193,11 @@ export default function Dashboard() {
             <div className="flex items-center gap-3 mb-2">
               <span className="text-3xl">⚡</span>
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                My Home Devices
+                VoltaHome
               </h1>
             </div>
             <p className="text-gray-600">
-              Keep track of battery changes across your home
+              Keep track of maintenance across your entire home
             </p>
           </div>
           <ButtonAccount />
@@ -169,14 +207,14 @@ export default function Dashboard() {
         <div className="flex justify-center">
           <a href="/dashboard/add-item" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg transition-all duration-200 flex items-center gap-3 hover:shadow-xl">
             <span className="text-xl">📷</span>
-            Add New Device
+            Add New Item
           </a>
         </div>
 
         {/* Loading State */}
         {loading && (
           <div className="text-center py-16">
-            <div className="text-2xl text-gray-600">⚡ Loading your devices...</div>
+            <div className="text-2xl text-gray-600">⚡ Loading your items...</div>
           </div>
         )}
 
@@ -193,67 +231,90 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Battery Items Grid */}
+        {/* Items Grid by Category */}
         {!loading && !error && (
           <>
-            {items.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {items.map((item) => {
-                  const statusInfo = getStatusInfo(item);
+            {Object.keys(groupedItems).length > 0 ? (
+              <div className="space-y-8">
+                {Object.entries(groupedItems).map(([categoryKey, categoryItems]) => {
+                  const categoryInfo = categories[categoryKey] || categories.battery;
+                  
                   return (
-                    <div 
-                      key={item._id} 
-                      className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 border-l-4 ${statusInfo.color} border border-gray-100 relative`}
-                    >
-                      {/* Delete Button */}
-                      <button
-                        onClick={() => handleDeleteClick(item)}
-                        className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
-                        title="Delete device"
-                      >
-                        🗑️
-                      </button>
-
-                      <div className="flex justify-between items-start mb-4 pr-8">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                            {item.name}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            {item.batteryType} Batteries
-                          </p>
-                        </div>
-                        <span className={`${statusInfo.bgColor} ${statusInfo.textColor} text-xs font-medium px-3 py-1 rounded-full`}>
-                          {statusInfo.label}
+                    <div key={categoryKey}>
+                      {/* Category Header */}
+                      <div className="flex items-center gap-3 mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          {categoryInfo.name}
+                        </h2>
+                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
+                          {categoryItems.length} item{categoryItems.length !== 1 ? 's' : ''}
                         </span>
                       </div>
-                      
-                      <div className="mb-4">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-36 rounded-lg object-cover border border-gray-200"
-                        />
+
+                      {/* Category Items Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {categoryItems.map((item) => {
+                          const statusInfo = getStatusInfo(item);
+                          const maintenanceType = getMaintenanceType(item);
+                          
+                          return (
+                            <div 
+                              key={item._id} 
+                              className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 border-l-4 ${statusInfo.color} border border-gray-100 relative`}
+                            >
+                              {/* Delete Button */}
+                              <button
+                                onClick={() => handleDeleteClick(item)}
+                                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
+                                title="Delete item"
+                              >
+                                🗑️
+                              </button>
+
+                              <div className="flex justify-between items-start mb-4 pr-8">
+                                <div>
+                                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                                    {item.name}
+                                  </h3>
+                                  <p className="text-sm text-gray-500">
+                                    {maintenanceType}
+                                  </p>
+                                </div>
+                                <span className={`${statusInfo.bgColor} ${statusInfo.textColor} text-xs font-medium px-3 py-1 rounded-full`}>
+                                  {statusInfo.label}
+                                </span>
+                              </div>
+                              
+                              <div className="mb-4">
+                                <img
+                                  src={item.image}
+                                  alt={item.name}
+                                  className="w-full h-36 rounded-lg object-cover border border-gray-200"
+                                />
+                              </div>
+                              
+                              <div className="text-sm text-gray-600 mb-4 space-y-1">
+                                <p>
+                                  Last serviced: <span className="font-medium text-gray-900">{item.daysSinceChange} days ago</span>
+                                </p>
+                                <p>
+                                  Expected interval: <span className="font-medium text-gray-900">{item.expectedDuration} days</span>
+                                </p>
+                                <p>
+                                  Time elapsed: <span className="font-medium text-gray-900">{item.percentUsed}%</span>
+                                </p>
+                              </div>
+                              
+                              <button 
+                                onClick={() => handleMaintenanceCompleted(item._id)}
+                                className={`w-full font-medium py-3 px-4 rounded-lg transition-all duration-200 ${statusInfo.buttonColor}`}
+                              >
+                                {statusInfo.buttonText}
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
-                      
-                      <div className="text-sm text-gray-600 mb-4 space-y-1">
-                        <p>
-                          Last changed: <span className="font-medium text-gray-900">{item.daysSinceChange} days ago</span>
-                        </p>
-                        <p>
-                          Expected life: <span className="font-medium text-gray-900">{item.expectedDuration} days</span>
-                        </p>
-                        <p>
-                          Power used: <span className="font-medium text-gray-900">{item.percentUsed}%</span>
-                        </p>
-                      </div>
-                      
-                      <button 
-                        onClick={() => handleBatteryChanged(item._id)}
-                        className={`w-full font-medium py-3 px-4 rounded-lg transition-all duration-200 ${statusInfo.buttonColor}`}
-                      >
-                        {statusInfo.buttonText}
-                      </button>
                     </div>
                   );
                 })}
@@ -263,16 +324,16 @@ export default function Dashboard() {
               <div className="text-center py-16">
                 <div className="bg-white rounded-2xl shadow-lg p-12 border border-gray-100">
                   <div className="text-6xl mb-6">🏠</div>
-                  <h3 className="text-2xl font-semibold text-gray-900 mb-3">No devices tracked yet</h3>
+                  <h3 className="text-2xl font-semibold text-gray-900 mb-3">No items tracked yet</h3>
                   <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                    Start building your home device inventory by adding your first battery-powered device
+                    Start building your home maintenance inventory by adding your first item
                   </p>
                   <a 
                     href="/dashboard/add-item"
                     className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg transition-all duration-200 inline-flex items-center gap-3 hover:shadow-xl"
                   >
                     <span className="text-xl">📷</span>
-                    Add Your First Device
+                    Add Your First Item
                   </a>
                 </div>
               </div>
@@ -291,7 +352,7 @@ export default function Dashboard() {
             <div className="text-center">
               <div className="text-4xl mb-4">🗑️</div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Delete Device?
+                Delete Item?
               </h3>
               <p className="text-gray-600 mb-6">
                 Are you sure you want to delete <strong>{deleteModal.item?.name}</strong>? 
