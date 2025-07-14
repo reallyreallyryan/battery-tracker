@@ -1,4 +1,4 @@
-// Replace your /app/api/notifications/route.js with this simplified version for testing
+// Replace your /app/api/notifications/route.js with this production version
 
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
@@ -9,20 +9,21 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function GET() {
   try {
-    console.log("🔔 Starting simplified notification test...");
+    console.log("🔔 Starting battery notification check...");
 
     // Connect to MongoDB
     const client = await clientPromise;
     const db = client.db();
     const itemsCollection = db.collection("batteryItems");
     const usersCollection = db.collection("users");
+    const notificationsCollection = db.collection("notifications");
 
-    // Get all items and calculate status
+    // Get all battery items and calculate status
     const allItems = await itemsCollection.find({}).toArray();
     const userNotifications = new Map();
 
     for (const item of allItems) {
-      // Calculate status
+      // Calculate current status (same logic as dashboard)
       const today = new Date();
       const changeDate = new Date(item.dateLastChanged);
       today.setHours(0, 0, 0, 0);
@@ -39,32 +40,41 @@ export async function GET() {
         status = "warning";
       }
 
-      console.log(`📱 ${item.name}: ${status} (${Math.round(percentUsed)}% used)`);
-
-      // Add items that need notification (SKIP anti-spam check for testing)
+      // Only notify for warning or replace status
       if (status === "warning" || status === "replace") {
-        if (!userNotifications.has(item.userId)) {
-          userNotifications.set(item.userId, []);
-        }
-        
-        userNotifications.get(item.userId).push({
-          ...item,
-          status,
-          daysSinceChange,
-          percentUsed: Math.round(percentUsed)
+        // Check if we've already sent this notification recently (7-day cooldown)
+        const recentNotification = await notificationsCollection.findOne({
+          userId: item.userId,
+          itemId: item._id.toString(),
+          status: status,
+          sentAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } // Last 7 days
         });
+
+        if (!recentNotification) {
+          // Add to notifications map
+          if (!userNotifications.has(item.userId)) {
+            userNotifications.set(item.userId, []);
+          }
+          
+          userNotifications.get(item.userId).push({
+            ...item,
+            status,
+            daysSinceChange,
+            percentUsed: Math.round(percentUsed)
+          });
+        } else {
+          console.log(`⏰ Skipping ${item.name} - already notified within 7 days`);
+        }
       }
     }
-
-    console.log(`🚨 Found ${userNotifications.size} users with items needing notifications`);
 
     let emailsSent = 0;
     const emailResults = [];
 
-    // Send notifications
+    // Send notifications to each user
     for (const [userId, items] of userNotifications) {
       try {
-        // Get user email - try multiple ID formats
+        // Get user email - fixed ObjectId lookup
         let user;
         try {
           user = await usersCollection.findOne({ 
@@ -76,106 +86,169 @@ export async function GET() {
           });
         } catch (error) {
           // If ObjectId conversion fails, try string only
-          console.log(`⚠️ ObjectId conversion failed for ${userId}, trying string lookup`);
           user = await usersCollection.findOne({ _id: userId });
         }
-        
-        console.log(`👤 Looking for user: ${userId} (type: ${typeof userId})`);
-        console.log(`📧 Found user: ${user ? 'YES' : 'NO'}`);
-        if (user) {
-          console.log(`📧 User email: ${user.email}`);
-          console.log(`📧 User _id: ${user._id} (type: ${typeof user._id})`);
-        } else {
-          console.log(`❌ User lookup failed for ID: ${userId}`);
-        }
+
         if (!user?.email) {
           console.log(`❌ No email found for user ${userId}`);
           continue;
         }
 
-        // Create simple email content
+        // Separate red and yellow items
         const redItems = items.filter(item => item.status === "replace");
         const yellowItems = items.filter(item => item.status === "warning");
 
-        const emailHtml = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2>⚡ VoltaHome Battery Alert</h2>
-            
-            ${redItems.length > 0 ? `
-              <div style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 15px; margin: 15px 0;">
-                <h3>🔴 Immediate Attention Required</h3>
-                ${redItems.map(item => `
-                  <p><strong>${item.name}</strong><br>
-                  ${item.batteryType} batteries • ${item.daysSinceChange} days • ${item.percentUsed}% used</p>
-                `).join('')}
-              </div>
-            ` : ''}
-
-            ${yellowItems.length > 0 ? `
-              <div style="background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 15px; margin: 15px 0;">
-                <h3>⚠️ Check Soon</h3>
-                ${yellowItems.map(item => `
-                  <p><strong>${item.name}</strong><br>
-                  ${item.batteryType} batteries • ${item.daysSinceChange} days • ${item.percentUsed}% used</p>
-                `).join('')}
-              </div>
-            ` : ''}
-
-            <p style="text-align: center; margin: 30px 0;">
-              <a href="https://voltahome.app/dashboard" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-                Open VoltaHome Dashboard
-              </a>
-            </p>
-          </div>
-        `;
-
+        // Create email content
+        const emailHtml = createNotificationEmail(user.email, redItems, yellowItems);
         const emailSubject = redItems.length > 0 
           ? `🔴 VoltaHome Alert: ${redItems.length} device(s) need immediate battery replacement`
           : `⚠️ VoltaHome: ${yellowItems.length} device(s) may need battery replacement soon`;
 
-        console.log(`📤 Attempting to send email to: ${user.email}`);
-        console.log(`📋 Subject: ${emailSubject}`);
-
         // Send email via Resend
         const { data, error } = await resend.emails.send({
-          from: 'VoltaHome <onboarding@resend.dev>', // Using Resend's default domain for testing
+          from: 'VoltaHome <onboarding@resend.dev>', // Using default domain
           to: user.email,
           subject: emailSubject,
           html: emailHtml,
         });
 
         if (error) {
-          console.error(`❌ Resend error:`, error);
+          console.error(`Failed to send email to ${user.email}:`, error);
           emailResults.push({ email: user.email, success: false, error: error.message });
-        } else {
-          console.log(`✅ Email sent successfully to ${user.email}`);
-          console.log(`📬 Resend email ID: ${data?.id}`);
-          emailsSent++;
-          emailResults.push({ email: user.email, success: true, emailId: data?.id });
+          continue;
+        }
+
+        console.log(`✅ Email sent to ${user.email}`);
+        emailsSent++;
+        emailResults.push({ email: user.email, success: true, emailId: data?.id });
+
+        // Record notifications to prevent spam (7-day cooldown)
+        for (const item of items) {
+          await notificationsCollection.insertOne({
+            userId: item.userId,
+            itemId: item._id.toString(),
+            status: item.status,
+            sentAt: new Date(),
+            emailId: data?.id
+          });
         }
 
       } catch (error) {
-        console.error(`💥 Error processing user ${userId}:`, error);
+        console.error(`Error sending notification to user ${userId}:`, error);
         emailResults.push({ userId, success: false, error: error.message });
       }
     }
 
     return NextResponse.json({ 
       success: true, 
-      message: `Simplified test complete. ${emailsSent} emails sent.`,
+      message: `Notification check complete. ${emailsSent} emails sent.`,
       emailsSent,
       usersChecked: userNotifications.size,
-      results: emailResults,
-      debug: {
-        totalItems: allItems.length,
-        itemsNeedingNotification: Array.from(userNotifications.values()).flat().length
-      }
+      results: emailResults
     });
 
   } catch (error) {
-    console.error("Error in simplified notification system:", error);
+    console.error("Error in notification system:", error);
     return NextResponse.json(
-      { error: error.message, stack: error.stack },
+      { error: "Failed to process notifications" },
+      { status: 500 }
+    );
+  }
+}
+
+// Helper function to create notification email HTML
+function createNotificationEmail(userEmail, redItems, yellowItems) {
+  const hasRed = redItems.length > 0;
+  const hasYellow = yellowItems.length > 0;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>VoltaHome Battery Alert</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { font-size: 24px; font-weight: bold; color: #4F46E5; margin-bottom: 10px; }
+        .alert-red { background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 15px; margin: 15px 0; }
+        .alert-yellow { background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 15px; margin: 15px 0; }
+        .device { margin: 10px 0; padding: 10px; background: white; border-radius: 6px; border: 1px solid #E5E5E5; }
+        .device-name { font-weight: bold; color: #1F2937; }
+        .device-info { font-size: 14px; color: #6B7280; margin-top: 4px; }
+        .cta { text-align: center; margin: 30px 0; }
+        .button { 
+          background: #4F46E5; 
+          color: white; 
+          padding: 12px 24px; 
+          text-decoration: none; 
+          border-radius: 6px; 
+          display: inline-block;
+          font-weight: 500;
+        }
+        .footer { text-align: center; color: #9CA3AF; font-size: 12px; margin-top: 30px; border-top: 1px solid #E5E5E5; padding-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="logo">⚡ VoltaHome</div>
+        <h2 style="color: #1F2937; margin: 0;">Battery Status Alert</h2>
+      </div>
+
+      ${hasRed ? `
+      <div class="alert-red">
+        <h3 style="margin-top: 0; color: #DC2626;">🔴 Immediate Attention Required</h3>
+        <p style="margin-bottom: 15px;">These devices need battery replacement now:</p>
+        ${redItems.map(item => `
+          <div class="device">
+            <div class="device-name">${item.name}</div>
+            <div class="device-info">
+              ${item.batteryType} batteries • ${item.daysSinceChange} days since last change • ${item.percentUsed}% power used
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      ` : ''}
+
+      ${hasYellow ? `
+      <div class="alert-yellow">
+        <h3 style="margin-top: 0; color: #D97706;">⚠️ Check Soon</h3>
+        <p style="margin-bottom: 15px;">These devices may need battery replacement in the near future:</p>
+        ${yellowItems.map(item => `
+          <div class="device">
+            <div class="device-name">${item.name}</div>
+            <div class="device-info">
+              ${item.batteryType} batteries • ${item.daysSinceChange} days since last change • ${item.percentUsed}% power used
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      ` : ''}
+
+      <div class="cta">
+        <a href="https://voltahome.app/dashboard" class="button">
+          Open VoltaHome Dashboard
+        </a>
+      </div>
+
+      <div class="footer">
+        <p><strong>VoltaHome</strong> - Keep your home powered and safe</p>
+        <p>You're receiving this because you have devices tracked in VoltaHome that need attention.</p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// POST - Manual trigger for testing notifications
+export async function POST() {
+  try {
+    return await GET();
+  } catch (error) {
+    console.error("Error in manual notification trigger:", error);
+    return NextResponse.json(
+      { error: "Failed to trigger notifications" },
       { status: 500 }
     );
   }
