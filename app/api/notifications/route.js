@@ -104,7 +104,7 @@ export async function GET() {
 
         // Send email via Resend
         const { data, error } = await resend.emails.send({
-          from: 'VoltaHome <onboarding@resend.dev>',
+          from: 'VoltaHome <notifications@voltahome.app>',
           to: user.email,
           subject: emailSubject,
           html: emailHtml,
