@@ -1,4 +1,5 @@
 import { Inter } from "next/font/google";
+import { Providers } from "./providers";
 import config from "@/config";
 import "./globals.css";
 
@@ -54,7 +55,7 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-title" content={config.appName} />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
-        <meta name="msapplication-TileColor" content="#3b82f6" />
+        <meta name="msapplication-TileColor" content="#3b82f6" /> 
         <meta name="msapplication-tap-highlight" content="no" />
         
         {/* Preload critical resources */}
@@ -62,7 +63,7 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       </head>
       <body>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
