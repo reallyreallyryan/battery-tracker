@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import ButtonAccount from "@/components/ButtonAccount";
+import InstallPWA from "@/components/InstallPWA";
 
 export default function Dashboard() {
   const [items, setItems] = useState([]);
@@ -217,6 +218,8 @@ export default function Dashboard() {
             )}
           </>
         )}
+        {/* PWA Install Button */}
+        <InstallPWA />
       </section>
     </main>
   );
