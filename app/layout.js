@@ -49,6 +49,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" data-theme={config.colors.theme} className={font.className}>
       <head>
+       <meta name="google-site-verification" content="obYzvpoIl1YAElL2tKPu6hEQjOjmtQa8i3YN0omQ25c" />
         {/* PWA meta tags */}
         <meta name="application-name" content={config.appName} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
