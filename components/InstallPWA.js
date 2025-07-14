@@ -60,11 +60,7 @@ export default function InstallPWA() {
     if (!deferredPrompt) return;
 
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    }
+    await deferredPrompt.userChoice;
     
     setDeferredPrompt(null);
     setShowInstallButton(false);
@@ -106,11 +102,11 @@ export default function InstallPWA() {
           </div>
           <div className="flex items-center gap-2">
             <span>2.</span>
-            <span>Select "Add to Home Screen"</span>
+            <span>Select &quot;Add to Home Screen&quot;</span>
           </div>
           <div className="flex items-center gap-2">
             <span>3.</span>
-            <span>Tap "Add"</span>
+            <span>Tap &quot;Add&quot;</span>
           </div>
         </div>
       </div>
@@ -171,7 +167,7 @@ export function InlineInstallButton({ className = "" }) {
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    await deferredPrompt.userChoice;
     setDeferredPrompt(null);
     setShowInstallButton(false);
   };
