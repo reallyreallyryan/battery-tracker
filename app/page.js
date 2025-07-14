@@ -83,7 +83,7 @@ export default async function HomePage() {
                     <span className="bg-indigo-100 text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">3</span>
                     <div>
                       <h4 className="font-semibold text-gray-900">⏰ Stay Informed</h4>
-                      <p className="text-gray-600">Get visual status updates when it's time to replace</p>
+                      <p className="text-gray-600">Get visual status updates when it&apos;s time to replace</p>
                     </div>
                   </div>
                 </div>
@@ -105,7 +105,7 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Everything for Your Home's Power Needs
+              Everything for Your Home&apos;s Power Needs
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Simple tools to track and manage batteries across your entire home
@@ -119,7 +119,7 @@ export default async function HomePage() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Visual Tracking</h3>
               <p className="text-gray-600">
-                Take photos of your devices so you remember exactly what you're tracking.
+                Take photos of your devices so you remember exactly what you&apos;re tracking.
               </p>
             </div>
 
@@ -189,7 +189,7 @@ export default async function HomePage() {
               <ul className="text-left space-y-2 text-gray-600">
                 <li>• Smoke detector chirps at 3am</li>
                 <li>• TV remote dies during your show</li>
-                <li>• Can't remember when you last changed batteries</li>
+                <li>• Can&apos;t remember when you last changed batteries</li>
                 <li>• Buying batteries you might already have</li>
                 <li>• Worried about safety device failures</li>
               </ul>
@@ -220,7 +220,7 @@ export default async function HomePage() {
             Ready to Power Up Your Home Management?
           </h2>
           <p className="text-xl mb-8 text-indigo-100">
-            Join homeowners who've taken control of their battery maintenance
+            Join homeowners who&apos;ve taken control of their battery maintenance
           </p>
           
           {!session ? (
