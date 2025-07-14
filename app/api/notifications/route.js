@@ -1,4 +1,4 @@
-// Replace your /app/api/notifications/route.js with this production version
+// Replace your /app/api/notifications/route.js with this universal version
 
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
@@ -9,7 +9,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function GET() {
   try {
-    console.log("🔔 Starting battery notification check...");
+    console.log("🔔 Starting home maintenance notification check...");
 
     // Connect to MongoDB
     const client = await clientPromise;
@@ -18,7 +18,7 @@ export async function GET() {
     const usersCollection = db.collection("users");
     const notificationsCollection = db.collection("notifications");
 
-    // Get all battery items and calculate status
+    // Get all maintenance items and calculate status
     const allItems = await itemsCollection.find({}).toArray();
     const userNotifications = new Map();
 
@@ -99,14 +99,12 @@ export async function GET() {
         const yellowItems = items.filter(item => item.status === "warning");
 
         // Create email content
-        const emailHtml = createNotificationEmail(user.email, redItems, yellowItems);
-        const emailSubject = redItems.length > 0 
-          ? `🔴 VoltaHome Alert: ${redItems.length} device(s) need immediate battery replacement`
-          : `⚠️ VoltaHome: ${yellowItems.length} device(s) may need battery replacement soon`;
+        const emailHtml = createMaintenanceNotificationEmail(user.email, redItems, yellowItems);
+        const emailSubject = createEmailSubject(redItems, yellowItems);
 
         // Send email via Resend
         const { data, error } = await resend.emails.send({
-          from: 'VoltaHome <onboarding@resend.dev>', // Using default domain
+          from: 'VoltaHome <onboarding@resend.dev>',
           to: user.email,
           subject: emailSubject,
           html: emailHtml,
@@ -141,14 +139,14 @@ export async function GET() {
 
     return NextResponse.json({ 
       success: true, 
-      message: `Notification check complete. ${emailsSent} emails sent.`,
+      message: `Home maintenance check complete. ${emailsSent} emails sent.`,
       emailsSent,
       usersChecked: userNotifications.size,
       results: emailResults
     });
 
   } catch (error) {
-    console.error("Error in notification system:", error);
+    console.error("Error in maintenance notification system:", error);
     return NextResponse.json(
       { error: "Failed to process notifications" },
       { status: 500 }
@@ -156,10 +154,54 @@ export async function GET() {
   }
 }
 
+// Helper function to create smart email subject
+function createEmailSubject(redItems, yellowItems) {
+  const totalItems = redItems.length + yellowItems.length;
+  
+  if (redItems.length > 0 && yellowItems.length > 0) {
+    return `🏠 VoltaHome Alert: ${redItems.length} urgent + ${yellowItems.length} upcoming maintenance items`;
+  } else if (redItems.length > 0) {
+    return `🔴 VoltaHome Alert: ${redItems.length} home maintenance item${redItems.length > 1 ? 's' : ''} need immediate attention`;
+  } else {
+    return `⚠️ VoltaHome: ${yellowItems.length} home maintenance item${yellowItems.length > 1 ? 's' : ''} need attention soon`;
+  }
+}
+
+// Helper function to get maintenance type display
+function getMaintenanceType(item) {
+  if (item.category === 'battery' || !item.category) {
+    return item.batteryType || item.itemType || 'Unknown';
+  }
+  return item.maintenanceType || item.itemType || 'Unknown';
+}
+
+// Helper function to get category display
+function getCategoryDisplay(item) {
+  const categories = {
+    battery: "🔋 Power & Batteries",
+    hvac: "🌬️ HVAC & Air Quality", 
+    appliance: "🏠 Appliance Maintenance"
+  };
+  
+  return categories[item.category] || categories.battery;
+}
+
+// Helper function to get action verb based on category
+function getActionVerb(item) {
+  const verbs = {
+    battery: "replace batteries",
+    hvac: "replace/clean filter", 
+    appliance: "service/clean"
+  };
+  
+  return verbs[item.category] || "service";
+}
+
 // Helper function to create notification email HTML
-function createNotificationEmail(userEmail, redItems, yellowItems) {
+function createMaintenanceNotificationEmail(userEmail, redItems, yellowItems) {
   const hasRed = redItems.length > 0;
   const hasYellow = yellowItems.length > 0;
+  const totalItems = redItems.length + yellowItems.length;
 
   return `
     <!DOCTYPE html>
@@ -167,16 +209,18 @@ function createNotificationEmail(userEmail, redItems, yellowItems) {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>VoltaHome Battery Alert</title>
+      <title>VoltaHome Maintenance Alert</title>
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
         .header { text-align: center; margin-bottom: 30px; }
         .logo { font-size: 24px; font-weight: bold; color: #4F46E5; margin-bottom: 10px; }
         .alert-red { background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 15px; margin: 15px 0; }
         .alert-yellow { background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 15px; margin: 15px 0; }
-        .device { margin: 10px 0; padding: 10px; background: white; border-radius: 6px; border: 1px solid #E5E5E5; }
-        .device-name { font-weight: bold; color: #1F2937; }
+        .device { margin: 10px 0; padding: 12px; background: white; border-radius: 6px; border: 1px solid #E5E5E5; }
+        .device-name { font-weight: bold; color: #1F2937; font-size: 16px; }
+        .device-category { font-size: 12px; color: #6B7280; text-transform: uppercase; font-weight: 500; margin-bottom: 4px; }
         .device-info { font-size: 14px; color: #6B7280; margin-top: 4px; }
+        .device-action { font-size: 13px; color: #059669; font-weight: 500; margin-top: 4px; }
         .cta { text-align: center; margin: 30px 0; }
         .button { 
           background: #4F46E5; 
@@ -187,25 +231,32 @@ function createNotificationEmail(userEmail, redItems, yellowItems) {
           display: inline-block;
           font-weight: 500;
         }
+        .summary { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 15px; margin: 20px 0; }
         .footer { text-align: center; color: #9CA3AF; font-size: 12px; margin-top: 30px; border-top: 1px solid #E5E5E5; padding-top: 20px; }
       </style>
     </head>
     <body>
       <div class="header">
         <div class="logo">⚡ VoltaHome</div>
-        <h2 style="color: #1F2937; margin: 0;">Battery Status Alert</h2>
+        <h2 style="color: #1F2937; margin: 0;">Home Maintenance Alert</h2>
+        ${totalItems === 1 ? 
+          `<p style="color: #6B7280; margin: 5px 0 0 0;">1 item needs your attention</p>` :
+          `<p style="color: #6B7280; margin: 5px 0 0 0;">${totalItems} items need your attention</p>`
+        }
       </div>
 
       ${hasRed ? `
       <div class="alert-red">
         <h3 style="margin-top: 0; color: #DC2626;">🔴 Immediate Attention Required</h3>
-        <p style="margin-bottom: 15px;">These devices need battery replacement now:</p>
+        <p style="margin-bottom: 15px;">These items need service right away:</p>
         ${redItems.map(item => `
           <div class="device">
+            <div class="device-category">${getCategoryDisplay(item)}</div>
             <div class="device-name">${item.name}</div>
             <div class="device-info">
-              ${item.batteryType} batteries • ${item.daysSinceChange} days since last change • ${item.percentUsed}% power used
+              ${getMaintenanceType(item)} • ${item.daysSinceChange} days since last service • ${item.percentUsed}% of expected life used
             </div>
+            <div class="device-action">→ Recommended: ${getActionVerb(item)}</div>
           </div>
         `).join('')}
       </div>
@@ -213,18 +264,30 @@ function createNotificationEmail(userEmail, redItems, yellowItems) {
 
       ${hasYellow ? `
       <div class="alert-yellow">
-        <h3 style="margin-top: 0; color: #D97706;">⚠️ Check Soon</h3>
-        <p style="margin-bottom: 15px;">These devices may need battery replacement in the near future:</p>
+        <h3 style="margin-top: 0; color: #D97706;">⚠️ Service Recommended Soon</h3>
+        <p style="margin-bottom: 15px;">These items should be serviced in the near future:</p>
         ${yellowItems.map(item => `
           <div class="device">
+            <div class="device-category">${getCategoryDisplay(item)}</div>
             <div class="device-name">${item.name}</div>
             <div class="device-info">
-              ${item.batteryType} batteries • ${item.daysSinceChange} days since last change • ${item.percentUsed}% power used
+              ${getMaintenanceType(item)} • ${item.daysSinceChange} days since last service • ${item.percentUsed}% of expected life used
             </div>
+            <div class="device-action">→ Plan to: ${getActionVerb(item)}</div>
           </div>
         `).join('')}
       </div>
       ` : ''}
+
+      <div class="summary">
+        <strong>💡 Why This Matters:</strong>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+          <li><strong>Safety:</strong> Keep smoke detectors and safety devices functional</li>
+          <li><strong>Efficiency:</strong> Clean filters improve air quality and reduce energy costs</li>
+          <li><strong>Prevention:</strong> Regular maintenance prevents expensive repairs</li>
+          <li><strong>Peace of Mind:</strong> Stay ahead of problems before they happen</li>
+        </ul>
+      </div>
 
       <div class="cta">
         <a href="https://voltahome.app/dashboard" class="button">
@@ -233,8 +296,11 @@ function createNotificationEmail(userEmail, redItems, yellowItems) {
       </div>
 
       <div class="footer">
-        <p><strong>VoltaHome</strong> - Keep your home powered and safe</p>
-        <p>You're receiving this because you have devices tracked in VoltaHome that need attention.</p>
+        <p><strong>VoltaHome</strong> - Keep your home powered, clean, and safe</p>
+        <p>You're receiving this because you have home maintenance items that need attention.</p>
+        <p style="margin-top: 10px;">
+          <a href="https://voltahome.app" style="color: #6B7280; text-decoration: none;">Visit VoltaHome</a>
+        </p>
       </div>
     </body>
     </html>
