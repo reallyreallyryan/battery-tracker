@@ -24,35 +24,45 @@ export async function GET() {
       .sort({ createdAt: -1 }) // Most recent first
       .toArray();
 
-    // Calculate status for each item
-    const itemsWithStatus = items.map(item => {
-      const daysSinceChange = Math.floor(
-        (new Date() - new Date(item.dateLastChanged)) / (1000 * 60 * 60 * 24)
-      );
-      
-      const expectedDuration = item.expectedDuration || 180;
-      const percentUsed = (daysSinceChange / expectedDuration) * 100;
-      
-      let status = "good";
-      let statusColor = "green";
-      
-      if (percentUsed >= 80) {
-        status = "replace";
-        statusColor = "red";
-      } else if (percentUsed >= 50) {
-        status = "warning";
-        statusColor = "yellow";
-      }
+// Replace this section in your /app/api/items/route.js
 
-      return {
-        ...item,
-        _id: item._id.toString(),
-        daysSinceChange,
-        percentUsed: Math.round(percentUsed),
-        status,
-        statusColor,
-      };
-    });
+  // Calculate status for each item
+  const itemsWithStatus = items.map(item => {
+    // Calendar day calculation (instead of exact 24-hour periods)
+    const today = new Date();
+    const changeDate = new Date(item.dateLastChanged);
+    
+    // Set both dates to midnight to compare calendar days only
+    today.setHours(0, 0, 0, 0);
+    changeDate.setHours(0, 0, 0, 0);
+    
+    const daysSinceChange = Math.floor(
+      (today - changeDate) / (1000 * 60 * 60 * 24)
+    );
+    
+    const expectedDuration = item.expectedDuration || 180;
+    const percentUsed = (daysSinceChange / expectedDuration) * 100;
+    
+    let status = "good";
+    let statusColor = "green";
+    
+    if (percentUsed >= 80) {
+      status = "replace";
+      statusColor = "red";
+    } else if (percentUsed >= 50) {
+      status = "warning";
+      statusColor = "yellow";
+    }
+
+    return {
+      ...item,
+      _id: item._id.toString(),
+      daysSinceChange,
+      percentUsed: Math.round(percentUsed),
+      status,
+      statusColor,
+    };
+  });
 
     return NextResponse.json({ items: itemsWithStatus });
   } catch (error) {
