@@ -216,8 +216,7 @@ const startCamera = useCallback(async () => {
                 muted
                 className="w-full h-64 bg-black rounded-lg mb-4"
                 style={{ 
-                    objectFit: 'cover',
-                    transform: 'scaleX(-1)' // Mirror the video like a selfie
+                    objectFit: 'cover'
                 }}
                 />
               <div className="flex gap-4 justify-center">
