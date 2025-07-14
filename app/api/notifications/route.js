@@ -2,6 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { ObjectId } from "mongodb";
 import clientPromise from "@/libs/mongo";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -63,17 +64,30 @@ export async function GET() {
     // Send notifications
     for (const [userId, items] of userNotifications) {
       try {
-        // Get user email
-        const user = await usersCollection.findOne({ 
-          $or: [
-            { _id: userId },
-            { _id: userId.toString() }
-          ]
-        });
+        // Get user email - try multiple ID formats
+        let user;
+        try {
+          user = await usersCollection.findOne({ 
+            $or: [
+              { _id: new ObjectId(userId) },  // Convert string to ObjectId
+              { _id: userId },                // Try as-is 
+              { _id: userId.toString() }      // Try as string
+            ]
+          });
+        } catch (error) {
+          // If ObjectId conversion fails, try string only
+          console.log(`⚠️ ObjectId conversion failed for ${userId}, trying string lookup`);
+          user = await usersCollection.findOne({ _id: userId });
+        }
         
-        console.log(`👤 Looking for user: ${userId}`);
-        console.log(`📧 Found user email: ${user?.email || 'NOT FOUND'}`);
-
+        console.log(`👤 Looking for user: ${userId} (type: ${typeof userId})`);
+        console.log(`📧 Found user: ${user ? 'YES' : 'NO'}`);
+        if (user) {
+          console.log(`📧 User email: ${user.email}`);
+          console.log(`📧 User _id: ${user._id} (type: ${typeof user._id})`);
+        } else {
+          console.log(`❌ User lookup failed for ID: ${userId}`);
+        }
         if (!user?.email) {
           console.log(`❌ No email found for user ${userId}`);
           continue;
