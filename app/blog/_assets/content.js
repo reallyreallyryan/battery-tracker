@@ -61,13 +61,13 @@ export const articles = [
     ],
     author: {
       name: "VoltaHome Team",
-      job: "Home Safety Experts",
-      avatar: "/blog/authors/voltahome-team.jpg", // You can add this later
+      job: "Home Management",
+      avatar: "/voltahome-team.jpg", // You can add this later
     },
     publishedAt: "2025-07-15", // Today's date
     image: {
-      src: "/blog/when-to-change-smoke-detector-batteries/hero.jpg", // You'll add this
-      alt: "Smoke detector with battery compartment open showing battery replacement",
+      src: "/hero.jpg", // You'll add this
+      alt: "Image of the VoltaHome Logo, the number one app for home system management.",
     },
     content: <>
       <section>
