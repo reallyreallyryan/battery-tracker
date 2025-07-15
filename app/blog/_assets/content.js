@@ -72,7 +72,7 @@ export const articles = [
     content: <>
       <section>
         <p className="text-lg leading-relaxed mb-6">
-          Every year, 2,000+ house fires occur because of dead smoke detector batteries. 
+          Every year, <a href="https://www.nfpa.org/education-and-research/research/nfpa-research/fire-statistical-reports/smoke-alarms-in-us-home-fires">2,000+ house fires occur because of dead smoke detector batteries</a>. 
           Don&apos;t let your family become a statistic. This complete guide shows you exactly 
           when and how to change your smoke detector batteries to keep your home safe.
         </p>
