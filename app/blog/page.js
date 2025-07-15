@@ -11,7 +11,7 @@ export default function BlogIndex() {
       <nav className="px-6 py-4 border-b border-gray-200">
         <div className="flex justify-between items-center max-w-6xl mx-auto">
           <a href="/" className="flex items-center gap-2 text-gray-900 hover:text-indigo-600 transition-colors">
-            <span className="text-2xl">⚡</span>
+            <img src="/logo.png" alt="VoltaHome Logo" className="w-8 h-8" />
             <span className="text-xl font-bold">VoltaHome</span>
           </a>
           <div className="flex items-center gap-4">
@@ -63,7 +63,7 @@ export default function BlogIndex() {
                 </span>
                 <span>VoltaHome Team</span>
                 <span>•</span>
-                <span>Jan 15, 2025</span>
+                <span>July 15, 2025</span>
               </div>
               
               <a href="/blog/when-to-change-smoke-detector-batteries" className="text-indigo-600 hover:text-indigo-800 font-medium">

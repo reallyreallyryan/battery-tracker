@@ -57,7 +57,7 @@ export default function SmokeDetectorBatteryGuide() {
               </div>
             </div>
             <div className="text-sm">
-              Published January 15, 2025
+              Published July 15, 2025
             </div>
           </div>
         </header>
