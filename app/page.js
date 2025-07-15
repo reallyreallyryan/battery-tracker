@@ -2,9 +2,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/libs/next-auth";
 import ButtonSignin from "@/components/ButtonSignin";
 
+export const metadata = {
+  title: "VoltaHome: Battery Tracking App | Never Forget Battery Changes",
+  description: "Track battery life in all your devices with photos and smart alerts. Never get caught with dead batteries in smoke detectors, remotes, and more.",
+  keywords: "battery tracker, battery replacement, smoke detector batteries, home safety",
+}
+
 export default async function HomePage() {
   const session = await getServerSession(authOptions);
-
+  
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Navigation */}
