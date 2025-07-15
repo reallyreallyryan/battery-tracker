@@ -73,7 +73,7 @@ export const articles = [
       <section>
         <p className="text-lg leading-relaxed mb-6">
           Every year, 2,000+ house fires occur because of dead smoke detector batteries. 
-          Don't let your family become a statistic. This complete guide shows you exactly 
+          Don&apos;t let your family become a statistic. This complete guide shows you exactly 
           when and how to change your smoke detector batteries to keep your home safe.
         </p>
         
@@ -81,7 +81,7 @@ export const articles = [
         <p className="mb-4">
           <strong>The golden rule:</strong> Change smoke detector batteries at least once per year, 
           even if they seem to be working. Most experts recommend changing them when daylight 
-          saving time begins or ends - it's an easy way to remember.
+          saving time begins or ends - it&apos;s an easy way to remember.
         </p>
         
         <div className="bg-red-50 border-l-4 border-red-400 p-4 my-6">
@@ -97,7 +97,7 @@ export const articles = [
           <li className="mb-2"><strong>Chirping sound:</strong> The most obvious sign - usually happens at night when temperatures drop</li>
           <li className="mb-2"><strong>Low battery warning:</strong> Some detectors have a voice alert</li>
           <li className="mb-2"><strong>Test button fails:</strong> If pressing the test button produces a weak or no sound</li>
-          <li className="mb-2"><strong>Age:</strong> If you can't remember when you last changed it, it's time</li>
+          <li className="mb-2"><strong>Age:</strong> If you can&apos;t remember when you last changed it, it&apos;s time</li>
         </ul>
         
         <h2 className="text-2xl font-bold mt-8 mb-4">Step-by-Step Battery Replacement Guide</h2>
@@ -127,14 +127,14 @@ export const articles = [
           <strong>9V Lithium:</strong> More expensive but lasts 2-3 years. Worth it for hard-to-reach detectors.
         </p>
         <p className="mb-6">
-          <strong>Avoid:</strong> Rechargeable batteries - they don't provide consistent power as they discharge.
+          <strong>Avoid:</strong> Rechargeable batteries - they don&apos;t provide consistent power as they discharge.
         </p>
         
         <h2 className="text-2xl font-bold mt-8 mb-4">Never Forget Again</h2>
         <p className="mb-4">
           The easiest way to stay on top of smoke detector maintenance is with a tracking system. 
           VoltaHome lets you photograph each detector, record when you changed the battery, 
-          and get automatic reminders when it's time for replacement.
+          and get automatic reminders when it&apos;s time for replacement.
         </p>
         
         <div className="text-center my-8">
