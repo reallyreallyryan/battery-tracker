@@ -127,7 +127,7 @@ export default function BlogIndex() {
       <footer className="px-6 py-12 bg-gray-900 text-gray-300">
         <div className="max-w-6xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="text-2xl">⚡</span>
+            <img src="/logo.png" alt="VoltaHome Logo" className="w-8 h-8" />
             <span className="text-xl font-bold">VoltaHome</span>
           </div>
           <p className="text-gray-400 mb-4">

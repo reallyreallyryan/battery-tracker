@@ -16,7 +16,7 @@ export default async function HomePage() {
       {/* Navigation */}
       <nav className="px-6 py-4 flex justify-between items-center max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">⚡</span>
+          <img src="/logo.png" alt="VoltaHome Logo" className="w-8 h-8" />
           <span className="text-xl font-bold text-gray-900">VoltaHome</span>
         </div>
         
@@ -311,7 +311,7 @@ export default async function HomePage() {
       <footer className="px-6 py-12 bg-gray-900 text-gray-300">
         <div className="max-w-6xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="text-2xl">⚡</span>
+            <img src="/logo.png" alt="VoltaHome Logo" className="w-8 h-8" />
             <span className="text-xl font-bold">VoltaHome</span>
           </div>
           <p className="text-gray-400 mb-4">

@@ -191,7 +191,7 @@ export default function Dashboard() {
         <div className="flex justify-between items-center">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl">⚡</span>
+              <img src="/logo.png" alt="VoltaHome Logo" className="w-8 h-8" />
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
                 VoltaHome
               </h1>
