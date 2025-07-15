@@ -1,5 +1,22 @@
 import { generateMetadata } from "@/libs/seo";
 
+export const authors = [
+  {
+    slug: "voltahome-team",
+    name: "VoltaHome Team",
+    job: "Home Safety Experts",
+    description: "Experts in home battery management and safety device maintenance.",
+    avatar: "/blog/authors/voltahome-team.jpg",
+    socials: [
+      {
+        name: "Twitter",
+        icon: "TwitterIcon",
+        url: "https://twitter.com/voltahome",
+      },
+    ],
+  },
+];
+
 // Categories for your blog
 export const categories = [
   {
