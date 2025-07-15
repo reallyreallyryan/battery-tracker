@@ -21,6 +21,11 @@ export default async function HomePage() {
         </div>
         
         <div className="flex items-center gap-4">
+          {/* Add blog link here */}
+          <a href="/blog" className="text-gray-600 hover:text-gray-900 transition-colors font-medium">
+            Blog
+          </a>
+          
           {session ? (
             <a href="/dashboard" className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
               Dashboard
