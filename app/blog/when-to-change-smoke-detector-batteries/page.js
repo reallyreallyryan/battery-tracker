@@ -116,7 +116,7 @@ export default function SmokeDetectorBatteryGuide() {
             <p className="text-blue-700">
               Use <a href="https://www.voltahome.app/" 
                             className="text-indigo-600 hover:text-indigo-800 underline">
-                            VoltaHome's home maintenance reminders
+                            VoltaHome maintenance reminders
                         </a> to take a photo of each smoke detector and track when you last 
               changed the battery. Set reminders so you never forget this critical safety task.
             </p>
