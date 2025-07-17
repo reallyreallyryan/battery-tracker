@@ -31,12 +31,10 @@ export default function AddItem() {
     // HVAC & Filters
     { value: 'ac_filter', label: '🌬️ AC Filter', duration: 90, category: 'hvac' },
     { value: 'furnace_filter', label: '🏠 Furnace Filter', duration: 180, category: 'hvac' },
-    { value: 'air_purifier_filter', label: '💨 Air Purifier Filter', duration: 365, category: 'hvac' },
+    { value: 'air_purifier_filter', label: '💨 Air Filter', duration: 180, category: 'hvac' },
     
     // Electronics & Remotes
-    { value: 'tv_remote', label: '📺 TV Remote', duration: 540, category: 'battery' },
-    { value: 'game_controller', label: '🎮 Game Controller', duration: 365, category: 'battery' },
-    { value: 'wireless_mouse', label: '🖱️ Wireless Mouse', duration: 270, category: 'battery' },
+    { value: 'tv_remote', label: '📺 Remote', duration: 540, category: 'battery' },
     { value: 'garage_door_remote', label: '🚗 Garage Door Remote', duration: 730, category: 'battery' },
     
     // Appliances
@@ -46,10 +44,8 @@ export default function AddItem() {
     
     // Other Common Items
     { value: 'flashlight', label: '🔦 Flashlight', duration: 180, category: 'battery' },
-    { value: 'thermostat', label: '🌡️ Thermostat', duration: 365, category: 'battery' },
-    { value: 'clock', label: '⏰ Wall Clock', duration: 365, category: 'battery' },
+    { value: 'clock', label: '⏰ Clock', duration: 365, category: 'battery' },
     { value: 'doorbell', label: '🔔 Doorbell', duration: 365, category: 'battery' },
-    { value: 'motion_sensor', label: '👁️ Motion Sensor', duration: 365, category: 'battery' },
     { value: 'other', label: '📦 Other Device', duration: 365, category: 'other' }
   ];
 
