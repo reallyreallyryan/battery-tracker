@@ -310,7 +310,7 @@ export default function Dashboard() {
                               {/* Delete Button - Always Visible (Mobile Friendly) */}
                               <button
                                 onClick={() => deleteItem(item._id, item.name)}
-                                className="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors"
+                                className="absolute bottom-2 right-2 bg-gray-400 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm hover:bg-gray-600 transition-colors"
                                 title="Delete item"
                               >
                                 🗑️
@@ -331,7 +331,7 @@ export default function Dashboard() {
                                 }`}></span>
                                 <span className="text-xs text-gray-600">
                                   {item.status === 'replace' ? 'Replace' :
-                                  item.status === 'warning' ? 'Check Soon' : 'Good'}
+                                  item.status === 'warning' ? 'Replace Soon' : 'Good'}
                                 </span>
                               </div>
                               <p className="text-xs text-gray-500">
