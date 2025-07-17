@@ -1,0 +1,16 @@
+# VoltaHome
+
+> VoltaHome is a Progressive Web App that helps homeowners proactively manage battery and maintenance schedules for household devices using camera-based tracking and smart alerts.
+
+VoltaHome solves the universal household problem of remembering when to change batteries and perform maintenance. Users take photos of their devices, set expected lifespans, and receive visual progress indicators showing when action is needed.
+
+Key features include room-based organization, percentage-based usage tracking, magic link authentication, and native PWA experience across mobile and desktop.
+
+## About
+
+- [VoltaHome Home Page](https://voltahome.app/): User interface for gaining access their managed photos, tracked devices, and viewing battery status organized by room.
+
+## Blog
+
+- [Blog](https://voltahome.app/blog): How-to guides and maintenance tips for household devices and battery replacement.
+- [When To Change Smoke Detector Batteries](https://www.voltahome.app/blog/when-to-change-smoke-detector-batteries): Homeowner's guide to how often you should change your smoke detector batteries.
