@@ -26,6 +26,31 @@ export default function Dashboard() {
     unspecified: '❓ Unspecified Room' // For items without room field
   };
 
+  const deviceLabels = {
+  // Safety Devices
+  'smoke_detector': '🔥 Smoke Detector',
+  'carbon_monoxide_detector': '💨 Carbon Monoxide Detector', 
+  
+  // HVAC & Filters
+  'ac_filter': '🌬️ AC Filter',
+  'furnace_filter': '🏠 Furnace Filter',
+  'air_purifier_filter': '💨 Air Filter',
+  
+  // Electronics & Remotes  
+  'tv_remote': '📺  Remote',
+  'wireless_mouse': '🖱️ Wireless Mouse',
+  'garage_door_remote': '🚗 Garage Door Remote',
+  
+  // Appliances
+  'dishwasher_filter': '🍽️ Dishwasher Filter',
+  'refrigerator_filter': '❄️ Refrigerator Filter', 
+  'dryer_vent': '👕 Dryer Vent',
+  
+  // Other Common Items
+  'flashlight': '🔦 Flashlight',
+  'other': '📦 Other Device',
+  };
+
   // Load items from API
   useEffect(() => {
     fetchItems();
@@ -273,9 +298,9 @@ export default function Dashboard() {
                                    item.status === 'warning' ? 'Check Soon' : 'Good'}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-500">
-                                {item.category || 'Unknown'} • {item.itemType || 'Unknown type'}
-                              </p>
+                                <p className="text-xs text-gray-500">
+                                  {deviceLabels[item.itemType] || deviceLabels[item.batteryType] || deviceLabels[item.maintenanceType] || 'Unknown device'}
+                                </p>
                             </div>
                           ))}
                         </div>

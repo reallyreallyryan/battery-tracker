@@ -26,7 +26,6 @@ export default function AddItem() {
     // Safety Devices
     { value: 'smoke_detector', label: '🔥 Smoke Detector', duration: 365, category: 'safety' },
     { value: 'carbon_monoxide_detector', label: '💨 Carbon Monoxide Detector', duration: 365, category: 'safety' },
-    { value: 'security_keypad', label: '🔐 Security Keypad', duration: 365, category: 'safety' },
     
     // HVAC & Filters
     { value: 'ac_filter', label: '🌬️ AC Filter', duration: 90, category: 'hvac' },
@@ -35,6 +34,7 @@ export default function AddItem() {
     
     // Electronics & Remotes
     { value: 'tv_remote', label: '📺 Remote', duration: 540, category: 'battery' },
+    { value: 'wireless_mouse', label: '🖱️ Wireless Mouse', duration: 540, category: 'battery' },
     { value: 'garage_door_remote', label: '🚗 Garage Door Remote', duration: 730, category: 'battery' },
     
     // Appliances
@@ -44,8 +44,6 @@ export default function AddItem() {
     
     // Other Common Items
     { value: 'flashlight', label: '🔦 Flashlight', duration: 180, category: 'battery' },
-    { value: 'clock', label: '⏰ Clock', duration: 365, category: 'battery' },
-    { value: 'doorbell', label: '🔔 Doorbell', duration: 365, category: 'battery' },
     { value: 'other', label: '📦 Other Device', duration: 365, category: 'other' }
   ];
 
