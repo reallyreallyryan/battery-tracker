@@ -1,384 +1,308 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import ButtonAccount from "@/components/ButtonAccount";
-import InstallPWA from "@/components/InstallPWA";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
+  const router = useRouter();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [deleteModal, setDeleteModal] = useState({ open: false, item: null });
-  const [deleting, setDeleting] = useState(false);
+  const [expandedRooms, setExpandedRooms] = useState({});
 
-  // Category definitions for display
-  const categories = {
-    battery: {
-      name: "🔋 Batteries & Power",
-      color: "emerald"
-    },
-    hvac: {
-      name: "🌬️ HVAC & Air Quality", 
-      color: "blue"
-    },
-    appliance: {
-      name: "🏠 Appliance Maintenance",
-      color: "purple"
-    }
+  // Room labels mapping
+  const roomLabels = {
+    kitchen: '🍳 Kitchen',
+    living_room: '🛋️ Living Room',
+    bedroom: '🛏️ Bedroom',
+    bathroom: '🚿 Bathroom',
+    basement: '🏠 Basement',
+    garage: '🚗 Garage',
+    office: '💻 Office',
+    dining_room: '🍽️ Dining Room',
+    laundry_room: '🧺 Laundry Room',
+    attic: '📦 Attic',
+    outdoor: '🌳 Outdoor',
+    other: '📍 Other'
   };
 
-  // Fetch items on component mount
+  // Load items from API
   useEffect(() => {
     fetchItems();
   }, []);
 
   const fetchItems = async () => {
     try {
-      setLoading(true);
       const response = await fetch('/api/items');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch items');
+      if (response.ok) {
+        const data = await response.json();
+        setItems(data);
       }
-      
-      const data = await response.json();
-      setItems(data.items || []);
-    } catch (err) {
-      console.error('Error fetching items:', err);
-      setError(err.message);
+    } catch (error) {
+      console.error('Error fetching items:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle "maintenance completed" button click
-  const handleMaintenanceCompleted = async (itemId) => {
-    try {
-      const response = await fetch('/api/items', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemId,
-          action: 'batteryChanged' // Keep same action for backwards compatibility
-        })
+  // Calculate item status based on expected duration
+  const calculateStatus = (item) => {
+    const lastChanged = new Date(item.dateLastChanged);
+    const now = new Date();
+    const daysSinceChanged = Math.floor((now - lastChanged) / (1000 * 60 * 60 * 24));
+    const expectedDuration = item.expectedDuration || 180;
+    
+    const percentUsed = (daysSinceChanged / expectedDuration) * 100;
+    
+    if (percentUsed >= 100) return { status: 'red', label: 'Change Now', daysOverdue: daysSinceChanged - expectedDuration };
+    if (percentUsed >= 80) return { status: 'yellow', label: 'Check Soon', daysLeft: expectedDuration - daysSinceChanged };
+    return { status: 'green', label: 'Good', daysLeft: expectedDuration - daysSinceChanged };
+  };
+
+  // Get items that need attention (red or yellow)
+  const getUrgentItems = () => {
+    return items
+      .map(item => ({ ...item, statusInfo: calculateStatus(item) }))
+      .filter(item => item.statusInfo.status === 'red' || item.statusInfo.status === 'yellow')
+      .sort((a, b) => {
+        // Red items first, then yellow
+        if (a.statusInfo.status === 'red' && b.statusInfo.status === 'yellow') return -1;
+        if (a.statusInfo.status === 'yellow' && b.statusInfo.status === 'red') return 1;
+        return 0;
       });
+  };
 
-      if (!response.ok) {
-        throw new Error('Failed to update item');
+  // Group items by room
+  const getItemsByRoom = () => {
+    const grouped = {};
+    items.forEach(item => {
+      const room = item.room || 'other';
+      if (!grouped[room]) {
+        grouped[room] = [];
       }
-
-      alert('Maintenance date updated!');
-      fetchItems();
-    } catch (err) {
-      console.error('Error updating item:', err);
-      alert('Error updating item');
-    }
+      grouped[room].push({ ...item, statusInfo: calculateStatus(item) });
+    });
+    return grouped;
   };
 
-  // Handle delete button click
-  const handleDeleteClick = (item) => {
-    setDeleteModal({ open: true, item });
+  // Toggle room expansion
+  const toggleRoom = (roomKey) => {
+    setExpandedRooms(prev => ({
+      ...prev,
+      [roomKey]: !prev[roomKey]
+    }));
   };
 
-  // Handle delete confirmation
-  const handleDeleteConfirm = async () => {
-    if (!deleteModal.item) return;
-
-    try {
-      setDeleting(true);
-      const response = await fetch('/api/items', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemId: deleteModal.item._id
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete item');
-      }
-
-      setDeleteModal({ open: false, item: null });
-      fetchItems();
-      alert('Item deleted successfully!');
-    } catch (err) {
-      console.error('Error deleting item:', err);
-      alert('Error deleting item');
-    } finally {
-      setDeleting(false);
-    }
+  // Get room status counts
+  const getRoomStatus = (roomItems) => {
+    const red = roomItems.filter(item => calculateStatus(item).status === 'red').length;
+    const yellow = roomItems.filter(item => calculateStatus(item).status === 'yellow').length;
+    return { red, yellow, total: roomItems.length };
   };
 
-  // Close delete modal
-  const handleDeleteCancel = () => {
-    setDeleteModal({ open: false, item: null });
-  };
+  const urgentItems = getUrgentItems();
+  const itemsByRoom = getItemsByRoom();
 
-  // Get category info for an item
-  const getCategoryInfo = (item) => {
-    const category = item.category || 'battery'; // Default to battery for backwards compatibility
-    return categories[category] || categories.battery;
-  };
-
-  // Get maintenance type display
-  const getMaintenanceType = (item) => {
-    if (item.category === 'battery' || !item.category) {
-      return item.batteryType || item.itemType || 'Unknown';
-    }
-    return item.maintenanceType || item.itemType || 'Unknown';
-  };
-
-  // Get status info for display
-  const getStatusInfo = (item) => {
-    switch (item.status) {
-      case 'good':
-        return {
-          color: 'border-emerald-500',
-          bgColor: 'bg-emerald-100',
-          textColor: 'text-emerald-800',
-          buttonColor: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-          buttonText: '✅ Maintenance Done',
-          label: 'Good'
-        };
-      case 'warning':
-        return {
-          color: 'border-amber-500',
-          bgColor: 'bg-amber-100',
-          textColor: 'text-amber-800',
-          buttonColor: 'bg-amber-100 hover:bg-amber-200 text-amber-800',
-          buttonText: '⚠️ Consider Servicing',
-          label: 'Check Soon'
-        };
-      case 'replace':
-        return {
-          color: 'border-rose-500',
-          bgColor: 'bg-rose-100',
-          textColor: 'text-rose-800',
-          buttonColor: 'bg-rose-100 hover:bg-rose-200 text-rose-800',
-          buttonText: '🔴 SERVICE NOW!',
-          label: 'Service!'
-        };
-      default:
-        return {
-          color: 'border-gray-500',
-          bgColor: 'bg-gray-100',
-          textColor: 'text-gray-800',
-          buttonColor: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-          buttonText: '✅ Maintenance Done',
-          label: 'Unknown'
-        };
-    }
-  };
-
-  // Group items by category
-  const groupedItems = items.reduce((acc, item) => {
-    const category = item.category || 'battery';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(item);
-    return acc;
-  }, {});
+  if (loading) {
+    return (
+      <main className="min-h-screen p-4 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-8">
+            <div className="text-gray-500">Loading your items...</div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen p-6 pb-24 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <section className="max-w-6xl mx-auto space-y-8">
-        {/* Header with account button */}
-        <div className="flex justify-between items-center">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <img src="/logo.png" alt="VoltaHome Logo" className="w-8 h-8" />
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                VoltaHome
-              </h1>
+    <main className="min-h-screen p-4 pb-24 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="max-w-4xl mx-auto space-y-6">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="VoltaHome Logo" className="w-8 h-8" />
+            <h1 className="text-2xl font-bold text-gray-900">VoltaHome Dashboard</h1>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/add-item')}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg"
+          >
+            + Add Item
+          </button>
+        </div>
+
+        {/* Urgent Items Section */}
+        {urgentItems.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-red-50 to-yellow-50 px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                ⚠️ Needs Attention ({urgentItems.length} items)
+              </h2>
             </div>
-            <p className="text-gray-600">
-              Keep track of maintenance across your entire home
-            </p>
-          </div>
-          <ButtonAccount />
-        </div>
-
-        {/* Add New Item Button */}
-        <div className="flex justify-center">
-          <a href="/dashboard/add-item" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg transition-all duration-200 flex items-center gap-3 hover:shadow-xl">
-            <span className="text-xl">📷</span>
-            Add New Item
-          </a>
-        </div>
-
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-16">
-            <div className="text-2xl text-gray-600">⚡ Loading your items...</div>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <div className="text-center py-16">
-            <div className="text-rose-600 text-xl mb-4">❌ Error: {error}</div>
-            <button 
-              onClick={fetchItems}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
-        )}
-
-        {/* Items Grid by Category */}
-        {!loading && !error && (
-          <>
-            {Object.keys(groupedItems).length > 0 ? (
-              <div className="space-y-8">
-                {Object.entries(groupedItems).map(([categoryKey, categoryItems]) => {
-                  const categoryInfo = categories[categoryKey] || categories.battery;
-                  
-                  return (
-                    <div key={categoryKey}>
-                      {/* Category Header */}
-                      <div className="flex items-center gap-3 mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">
-                          {categoryInfo.name}
-                        </h2>
-                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-medium">
-                          {categoryItems.length} item{categoryItems.length !== 1 ? 's' : ''}
+            <div className="p-6 space-y-4">
+              {urgentItems.map(item => (
+                <div key={item.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <img 
+                      src={item.image} 
+                      alt={item.name}
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{item.name}</h3>
+                      <p className="text-sm text-gray-600">
+                        {roomLabels[item.room] || 'Unknown Room'}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-block w-3 h-3 rounded-full ${
+                          item.statusInfo.status === 'red' ? 'bg-red-500' :
+                          item.statusInfo.status === 'yellow' ? 'bg-yellow-500' : 'bg-green-500'
+                        }`}></span>
+                        <span className="text-sm font-medium">
+                          {item.statusInfo.status === 'red' ? 
+                            `${item.statusInfo.daysOverdue} days overdue` :
+                            `${item.statusInfo.daysLeft} days left`
+                          }
                         </span>
                       </div>
+                    </div>
+                  </div>
+                  <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    Mark Changed
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-                      {/* Category Items Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {categoryItems.map((item) => {
-                          const statusInfo = getStatusInfo(item);
-                          const maintenanceType = getMaintenanceType(item);
-                          
-                          return (
-                            <div 
-                              key={item._id} 
-                              className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 p-6 border-l-4 ${statusInfo.color} border border-gray-100 relative`}
-                            >
-                              {/* Delete Button */}
-                              <button
-                                onClick={() => handleDeleteClick(item)}
-                                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors"
-                                title="Delete item"
-                              >
-                                🗑️
-                              </button>
+        {/* Rooms Section */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">🏠 By Room</h2>
+          </div>
+          
+          {Object.keys(itemsByRoom).length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="text-gray-400 text-lg mb-2">📦</div>
+              <p className="text-gray-500">No items tracked yet</p>
+              <button
+                onClick={() => router.push('/dashboard/add-item')}
+                className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
+              >
+                Add Your First Item
+              </button>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {Object.entries(itemsByRoom).map(([roomKey, roomItems]) => {
+                const roomStatus = getRoomStatus(roomItems);
+                const isExpanded = expandedRooms[roomKey];
+                
+                return (
+                  <div key={roomKey}>
+                    {/* Room Header */}
+                    <button
+                      onClick={() => toggleRoom(roomKey)}
+                      className="w-full px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">
+                            {isExpanded ? '📂' : '📁'}
+                          </span>
+                          <span className="font-medium text-gray-900">
+                            {roomLabels[roomKey] || roomKey}
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            ({roomStatus.total} items)
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {roomStatus.red > 0 && (
+                            <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                              {roomStatus.red} urgent
+                            </span>
+                          )}
+                          {roomStatus.yellow > 0 && (
+                            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                              {roomStatus.yellow} soon
+                            </span>
+                          )}
+                          {roomStatus.red === 0 && roomStatus.yellow === 0 && (
+                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                              All good ✅
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
 
-                              <div className="flex justify-between items-start mb-4 pr-8">
-                                <div>
-                                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                                    {item.name}
-                                  </h3>
-                                  <p className="text-sm text-gray-500">
-                                    {maintenanceType}
-                                  </p>
-                                </div>
-                                <span className={`${statusInfo.bgColor} ${statusInfo.textColor} text-xs font-medium px-3 py-1 rounded-full`}>
-                                  {statusInfo.label}
+                    {/* Room Items (Collapsible) */}
+                    {isExpanded && (
+                      <div className="px-6 pb-4 bg-gray-50">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4">
+                          {roomItems.map(item => (
+                            <div key={item.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                              <img 
+                                src={item.image} 
+                                alt={item.name}
+                                className="w-full h-24 object-cover rounded-lg mb-3"
+                              />
+                              <h4 className="font-medium text-gray-900 text-sm mb-1 truncate">
+                                {item.name}
+                              </h4>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className={`inline-block w-2 h-2 rounded-full ${
+                                  item.statusInfo.status === 'red' ? 'bg-red-500' :
+                                  item.statusInfo.status === 'yellow' ? 'bg-yellow-500' : 'bg-green-500'
+                                }`}></span>
+                                <span className="text-xs text-gray-600">
+                                  {item.statusInfo.label}
                                 </span>
                               </div>
-                              
-                              <div className="mb-4">
-                                <img
-                                  src={item.image}
-                                  alt={item.name}
-                                  className="w-full h-36 rounded-lg object-cover border border-gray-200"
-                                />
-                              </div>
-                              
-                              <div className="text-sm text-gray-600 mb-4 space-y-1">
-                                <p>
-                                  Last serviced: <span className="font-medium text-gray-900">{item.daysSinceChange} days ago</span>
-                                </p>
-                                <p>
-                                  Expected interval: <span className="font-medium text-gray-900">{item.expectedDuration} days</span>
-                                </p>
-                                <p>
-                                  Time elapsed: <span className="font-medium text-gray-900">{item.percentUsed}%</span>
-                                </p>
-                              </div>
-                              
-                              <button 
-                                onClick={() => handleMaintenanceCompleted(item._id)}
-                                className={`w-full font-medium py-3 px-4 rounded-lg transition-all duration-200 ${statusInfo.buttonColor}`}
-                              >
-                                {statusInfo.buttonText}
-                              </button>
+                              <p className="text-xs text-gray-500">
+                                {item.category === 'battery' ? item.batteryType : 
+                                 item.maintenanceType || 'Maintenance'}
+                              </p>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              /* Empty State */
-              <div className="text-center py-16">
-                <div className="bg-white rounded-2xl shadow-lg p-12 border border-gray-100">
-                  <div className="text-6xl mb-6">🏠</div>
-                  <h3 className="text-2xl font-semibold text-gray-900 mb-3">No items tracked yet</h3>
-                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                    Start building your home maintenance inventory by adding your first item
-                  </p>
-                  <a 
-                    href="/dashboard/add-item"
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg transition-all duration-200 inline-flex items-center gap-3 hover:shadow-xl"
-                  >
-                    <span className="text-xl">📷</span>
-                    Add Your First Item
-                  </a>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-        
-        {/* PWA Install Button */}
-        <InstallPWA />
-      </section>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteModal.open && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div className="text-center">
-              <div className="text-4xl mb-4">🗑️</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Delete Item?
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to delete <strong>{deleteModal.item?.name}</strong>? 
-                This action cannot be undone.
-              </p>
-              
-              <div className="flex gap-3">
-                <button
-                  onClick={handleDeleteCancel}
-                  disabled={deleting}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteConfirm}
-                  disabled={deleting}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {deleting ? 'Deleting...' : 'Delete'}
-                </button>
+        {/* Stats Summary */}
+        {items.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Summary</h3>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-gray-900">{items.length}</div>
+                <div className="text-sm text-gray-600">Total Items</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-red-600">
+                  {items.filter(item => calculateStatus(item).status === 'red').length}
+                </div>
+                <div className="text-sm text-gray-600">Need Action</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  {items.filter(item => calculateStatus(item).status === 'green').length}
+                </div>
+                <div className="text-sm text-gray-600">All Good</div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </main>
   );
 }

@@ -12,13 +12,14 @@ export default function AddItem() {
   const [capturedImage, setCapturedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Form data with new category field
+  // Form data with new room field
   const [formData, setFormData] = useState({
     name: '',
     category: 'battery', // Default to battery for existing users
     batteryType: 'AA',
     dateLastChanged: new Date().toISOString().split('T')[0],
-    expectedDuration: 180 // Default for AA batteries
+    expectedDuration: 180, // Default for AA batteries
+    room: '' // NEW: Room field
   });
 
   // Categories with their maintenance types and expected durations
@@ -64,6 +65,22 @@ export default function AddItem() {
       examples: "Kitchen appliances, laundry, disposal"
     }
   };
+
+  // NEW: Rooms array
+  const rooms = [
+    { value: 'kitchen', label: '🍳 Kitchen' },
+    { value: 'living_room', label: '🛋️ Living Room' },
+    { value: 'bedroom', label: '🛏️ Bedroom' },
+    { value: 'bathroom', label: '🚿 Bathroom' },
+    { value: 'basement', label: '🏠 Basement' },
+    { value: 'garage', label: '🚗 Garage' },
+    { value: 'office', label: '💻 Office' },
+    { value: 'dining_room', label: '🍽️ Dining Room' },
+    { value: 'laundry_room', label: '🧺 Laundry Room' },
+    { value: 'attic', label: '📦 Attic' },
+    { value: 'outdoor', label: '🌳 Outdoor' },
+    { value: 'other', label: '📍 Other' }
+  ];
 
   // Get current category's types
   const getCurrentTypes = () => {
@@ -199,6 +216,11 @@ const startCamera = useCallback(async () => {
     
     if (!formData.name.trim()) {
       alert('Please enter an item name!');
+      return;
+    }
+
+    if (!formData.room) {
+      alert('Please select a room!');
       return;
     }
 
@@ -341,6 +363,30 @@ const startCamera = useCallback(async () => {
             </select>
             <p className="text-xs text-gray-500 mt-1">
               {categories[formData.category]?.examples}
+            </p>
+          </div>
+
+          {/* NEW: Room Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Room/Location *
+            </label>
+            <select
+              name="room"
+              value={formData.room}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            >
+              <option value="">Select Room</option>
+              {rooms.map(room => (
+                <option key={room.value} value={room.value}>
+                  {room.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Where is this item located in your home?
             </p>
           </div>
 

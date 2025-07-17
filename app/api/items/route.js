@@ -92,11 +92,12 @@ export async function POST(request) {
       maintenanceType,
       dateLastChanged, 
       expectedDuration, 
-      image 
+      image,
+      room
     } = body;
 
     // Validate required fields
-    if (!name || !dateLastChanged || !image) {
+    if (!name || !dateLastChanged || !image || !room) {
       return NextResponse.json(
         { error: "Missing required fields: name, dateLastChanged, image" },
         { status: 400 }
@@ -128,6 +129,7 @@ export async function POST(request) {
       userId: session.user.id,
       name: name.trim(),
       category: category,
+      room: room.trim(),
       
       // Store both old and new fields for backwards compatibility
       batteryType: category === 'battery' ? itemType : undefined,
