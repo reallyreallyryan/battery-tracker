@@ -12,61 +12,48 @@ export default function AddItem() {
   const [capturedImage, setCapturedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Form data with new room field
+  // Simplified form data - just device type, room, name, and date
   const [formData, setFormData] = useState({
     name: '',
-    category: 'battery', // Default to battery for existing users
-    batteryType: 'AA',
+    deviceType: '',
+    room: '',
     dateLastChanged: new Date().toISOString().split('T')[0],
-    expectedDuration: 180, // Default for AA batteries
-    room: '' // NEW: Room field
+    expectedDuration: 365 // Will auto-update based on device type
   });
 
-  // Categories with their maintenance types and expected durations
-  const categories = {
-    battery: {
-      name: "🔋 Batteries & Power",
-      types: {
-        'AA': 180,
-        'AAA': 120,
-        '9V': 365,
-        'CR2032': 730,
-        'C': 300,
-        'D': 400,
-        'CR123A': 365,
-        'Other': 180
-      },
-      unit: "days",
-      examples: "Smoke detectors, remotes, flashlights"
-    },
-    hvac: {
-      name: "🌬️ HVAC & Air Quality", 
-      types: {
-        'AC Filter (1" Basic)': 30,
-        'AC Filter (1" Pleated)': 90,
-        'AC Filter (4" Pleated)': 180,
-        'Furnace Filter': 180,
-        'Air Purifier Filter': 365,
-        'Other HVAC': 90
-      },
-      unit: "days",
-      examples: "Air conditioning, heating, air purifiers"
-    },
-    appliance: {
-      name: "🏠 Appliance Maintenance",
-      types: {
-        'Dishwasher Filter': 180,
-        'Dryer Vent': 365,
-        'Garbage Disposal': 180,
-        'Refrigerator Filter': 180,
-        'Other Appliance': 180
-      },
-      unit: "days", 
-      examples: "Kitchen appliances, laundry, disposal"
-    }
-  };
+  // Single device types array - much simpler!
+  const deviceTypes = [
+    // Safety Devices
+    { value: 'smoke_detector', label: '🔥 Smoke Detector', duration: 365, category: 'safety' },
+    { value: 'carbon_monoxide_detector', label: '💨 Carbon Monoxide Detector', duration: 365, category: 'safety' },
+    { value: 'security_keypad', label: '🔐 Security Keypad', duration: 365, category: 'safety' },
+    
+    // HVAC & Filters
+    { value: 'ac_filter', label: '🌬️ AC Filter', duration: 90, category: 'hvac' },
+    { value: 'furnace_filter', label: '🏠 Furnace Filter', duration: 180, category: 'hvac' },
+    { value: 'air_purifier_filter', label: '💨 Air Purifier Filter', duration: 365, category: 'hvac' },
+    
+    // Electronics & Remotes
+    { value: 'tv_remote', label: '📺 TV Remote', duration: 540, category: 'battery' },
+    { value: 'game_controller', label: '🎮 Game Controller', duration: 365, category: 'battery' },
+    { value: 'wireless_mouse', label: '🖱️ Wireless Mouse', duration: 270, category: 'battery' },
+    { value: 'garage_door_remote', label: '🚗 Garage Door Remote', duration: 730, category: 'battery' },
+    
+    // Appliances
+    { value: 'dishwasher_filter', label: '🍽️ Dishwasher Filter', duration: 180, category: 'appliance' },
+    { value: 'refrigerator_filter', label: '❄️ Refrigerator Filter', duration: 180, category: 'appliance' },
+    { value: 'dryer_vent', label: '👕 Dryer Vent', duration: 365, category: 'appliance' },
+    
+    // Other Common Items
+    { value: 'flashlight', label: '🔦 Flashlight', duration: 180, category: 'battery' },
+    { value: 'thermostat', label: '🌡️ Thermostat', duration: 365, category: 'battery' },
+    { value: 'clock', label: '⏰ Wall Clock', duration: 365, category: 'battery' },
+    { value: 'doorbell', label: '🔔 Doorbell', duration: 365, category: 'battery' },
+    { value: 'motion_sensor', label: '👁️ Motion Sensor', duration: 365, category: 'battery' },
+    { value: 'other', label: '📦 Other Device', duration: 365, category: 'other' }
+  ];
 
-  // NEW: Rooms array
+  // Rooms array (same as before)
   const rooms = [
     { value: 'kitchen', label: '🍳 Kitchen' },
     { value: 'living_room', label: '🛋️ Living Room' },
@@ -82,40 +69,25 @@ export default function AddItem() {
     { value: 'other', label: '📍 Other' }
   ];
 
-  // Get current category's types
-  const getCurrentTypes = () => {
-    return categories[formData.category]?.types || {};
-  };
-
-  // Get current maintenance type (battery type for batteries, filter type for HVAC, etc.)
-  const getCurrentType = () => {
-    if (formData.category === 'battery') {
-      return formData.batteryType;
-    }
-    return formData.maintenanceType || Object.keys(getCurrentTypes())[0];
-  };
-
-// Start camera
-const startCamera = useCallback(async () => {
+  // Start camera (same as before)
+  const startCamera = useCallback(async () => {
     console.log('🚀 START CAMERA CLICKED!');
     try {
       console.log('Setting loading to true...');
       setIsLoading(true);
       
-      // Set camera active FIRST so video element gets rendered
       setIsCameraActive(true);
       
       console.log('Requesting camera access...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: 'environment' // Use back camera on mobile
+          facingMode: 'environment'
         } 
       });
       
       console.log('Camera stream received:', stream);
       setCameraStream(stream);
       
-      // Give React a moment to render the video element
       setTimeout(() => {
         if (videoRef.current) {
           console.log('Video element found, setting stream...');
@@ -129,14 +101,14 @@ const startCamera = useCallback(async () => {
     } catch (error) {
       console.error('❌ Error accessing camera:', error);
       alert('Could not access camera. Please check permissions.');
-      setIsCameraActive(false); // Reset on error
+      setIsCameraActive(false);
     } finally {
       console.log('Setting loading to false...');
       setIsLoading(false);
     }
   }, []);
 
-  // Stop camera
+  // Stop camera (same as before)
   const stopCamera = useCallback(() => {
     if (cameraStream) {
       cameraStream.getTracks().forEach(track => track.stop());
@@ -145,67 +117,50 @@ const startCamera = useCallback(async () => {
     }
   }, [cameraStream]);
 
-  // Capture photo
+  // Capture photo (same as before)
   const capturePhoto = useCallback(() => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
       const context = canvas.getContext('2d');
       
-      // Set canvas size to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
-      // Draw the video frame to canvas
       context.drawImage(video, 0, 0);
       
-      // Convert to image data
       const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
       setCapturedImage(imageDataUrl);
       
-      // Stop camera after capture
       stopCamera();
     }
   }, [stopCamera]);
 
-  // Retake photo
+  // Retake photo (same as before)
   const retakePhoto = () => {
     setCapturedImage(null);
     startCamera();
   };
 
-  // Handle form input changes
+  // Handle form input changes - SIMPLIFIED!
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
       
-      // Update expected duration when category or type changes
-      if (name === 'category') {
-        // Reset to first option in new category
-        const newTypes = categories[value]?.types || {};
-        const firstType = Object.keys(newTypes)[0];
-        const firstDuration = newTypes[firstType];
-        
-        if (value === 'battery') {
-          newData.batteryType = firstType;
-          delete newData.maintenanceType;
-        } else {
-          newData.maintenanceType = firstType;
-          delete newData.batteryType;
+      // Auto-update duration when device type changes
+      if (name === 'deviceType') {
+        const selectedDevice = deviceTypes.find(d => d.value === value);
+        if (selectedDevice) {
+          newData.expectedDuration = selectedDevice.duration;
         }
-        newData.expectedDuration = firstDuration;
-      } else if (name === 'batteryType' || name === 'maintenanceType') {
-        // Update duration based on selected type
-        const types = getCurrentTypes();
-        newData.expectedDuration = types[value];
       }
       
       return newData;
     });
   };
 
-  // Submit form
+  // Submit form - updated for new structure
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -219,6 +174,11 @@ const startCamera = useCallback(async () => {
       return;
     }
 
+    if (!formData.deviceType) {
+      alert('Please select a device type!');
+      return;
+    }
+
     if (!formData.room) {
       alert('Please select a room!');
       return;
@@ -227,27 +187,47 @@ const startCamera = useCallback(async () => {
     setIsLoading(true);
     
     try {
-        // Save to database via API
-        const response = await fetch('/api/items', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...formData,
-            image: capturedImage,
-          }),
-        });
+      // Get device info for API compatibility
+      const selectedDevice = deviceTypes.find(d => d.value === formData.deviceType);
+      
+      // Prepare data for your existing API
+      const apiData = {
+        name: formData.name,
+        room: formData.room,
+        dateLastChanged: formData.dateLastChanged,
+        expectedDuration: formData.expectedDuration,
+        image: capturedImage,
         
-        if (!response.ok) {
-          throw new Error('Failed to save item');
-        }
+        // Map to your existing API structure
+        category: selectedDevice?.category || 'other',
+        itemType: formData.deviceType,
         
-        const result = await response.json();
-        console.log('Item saved:', result);
-        
-        alert('Item saved successfully!');
-        router.push('/dashboard');
+        // For backward compatibility
+        ...(selectedDevice?.category === 'battery' && {
+          batteryType: formData.deviceType
+        }),
+        ...(selectedDevice?.category !== 'battery' && {
+          maintenanceType: formData.deviceType
+        })
+      };
+
+      const response = await fetch('/api/items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save item');
+      }
+      
+      const result = await response.json();
+      console.log('Item saved:', result);
+      
+      alert('Item saved successfully!');
+      router.push('/dashboard');
       
     } catch (error) {
       console.error('Error saving item:', error);
@@ -272,7 +252,7 @@ const startCamera = useCallback(async () => {
           <div></div>
         </div>
 
-        {/* Camera Section */}
+        {/* Camera Section - SAME AS BEFORE */}
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
           <h2 className="text-lg font-semibold mb-4">📷 Take a Photo</h2>
           
@@ -336,40 +316,41 @@ const startCamera = useCallback(async () => {
             </div>
           )}
 
-          {/* Hidden canvas for photo capture */}
           <canvas ref={canvasRef} style={{ display: 'none' }} />
         </div>
 
-        {/* Form Section */}
+        {/* SIMPLIFIED FORM - The magic happens here! */}
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 space-y-4">
           <h2 className="text-lg font-semibold mb-4">📝 Item Details</h2>
           
-          {/* Category Selection */}
+          {/* SINGLE DEVICE DROPDOWN - Replaces category + type complexity */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category *
+              What device is this? *
             </label>
             <select
-              name="category"
-              value={formData.category}
+              name="deviceType"
+              value={formData.deviceType}
               onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              required
             >
-              {Object.entries(categories).map(([key, cat]) => (
-                <option key={key} value={key}>
-                  {cat.name}
+              <option value="">Select device type</option>
+              {deviceTypes.map(device => (
+                <option key={device.value} value={device.value}>
+                  {device.label} ({device.duration} days)
                 </option>
               ))}
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              {categories[formData.category]?.examples}
+              Expected lifespan is automatically set based on device type
             </p>
           </div>
 
-          {/* NEW: Room Selection */}
+          {/* Room Selection - Same as before */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Room/Location *
+              Which room? *
             </label>
             <select
               name="room"
@@ -378,61 +359,44 @@ const startCamera = useCallback(async () => {
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
             >
-              <option value="">Select Room</option>
+              <option value="">Select room</option>
               {rooms.map(room => (
                 <option key={room.value} value={room.value}>
                   {room.label}
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Where is this item located in your home?
-            </p>
           </div>
 
-          {/* Item Name */}
+          {/* Item Name - Improved placeholders */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Item Name *
+              Name this item *
             </label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              placeholder={formData.category === 'battery' ? 'e.g., TV Remote, Game Controller' : 
-                          formData.category === 'hvac' ? 'e.g., Living Room AC, Basement Furnace' :
-                          'e.g., Kitchen Dishwasher, Dryer Vent'}
+              placeholder={
+                formData.deviceType === 'smoke_detector' ? 'e.g., Kitchen Smoke Detector' :
+                formData.deviceType === 'tv_remote' ? 'e.g., Living Room TV Remote' :
+                formData.deviceType === 'ac_filter' ? 'e.g., Main Floor AC Filter' :
+                formData.deviceType === 'dishwasher_filter' ? 'e.g., Kitchen Dishwasher Filter' :
+                'e.g., Living Room Game Controller'
+              }
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Give it a name you&apos;ll recognize (include room if helpful)
+            </p>
           </div>
 
-          {/* Maintenance Type (Battery Type for batteries, Filter Type for HVAC, etc.) */}
+          {/* Date Last Changed - Same as before */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {formData.category === 'battery' ? 'Battery Type' : 
-               formData.category === 'hvac' ? 'Filter/Component Type' : 
-               'Maintenance Type'}
-            </label>
-            <select
-              name={formData.category === 'battery' ? 'batteryType' : 'maintenanceType'}
-              value={getCurrentType()}
-              onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              {Object.entries(getCurrentTypes()).map(([type, duration]) => (
-                <option key={type} value={type}>
-                  {type} ({duration} days expected life)
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Date Last Changed */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date Last {formData.category === 'battery' ? 'Changed' : 'Serviced/Replaced'}
+              When did you last change/service this? *
             </label>
             <input
               type="date"
@@ -444,10 +408,10 @@ const startCamera = useCallback(async () => {
             />
           </div>
 
-          {/* Expected Duration (auto-filled but editable) */}
+          {/* Expected Duration - Auto-filled, editable */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Expected Duration (days)
+              Expected lifespan (days)
             </label>
             <input
               type="number"
@@ -458,9 +422,12 @@ const startCamera = useCallback(async () => {
               max="3650"
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Automatically set based on device type, but you can adjust it
+            </p>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Button - Same as before */}
           <button
             type="submit"
             disabled={isLoading || !capturedImage}
