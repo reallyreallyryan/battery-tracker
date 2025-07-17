@@ -1,13 +1,19 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/libs/next-auth";
+import ButtonSignin from "@/components/ButtonSignin";
+
 export const metadata = {
   title: "VoltaHome Blog | Battery & Home Safety Guides",
   description: "Learn when to change batteries, how to track device maintenance, and keep your home safe with our comprehensive battery and home safety guides.",
   keywords: "battery tracking, home maintenance, smoke detector batteries, home safety, AC filter replacement",
 }
 
-export default function BlogIndex() {
+export default async function BlogIndex() {
+  const session = await getServerSession(authOptions);
+
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
+      {/* Updated Navigation with Dashboard Button */}
       <nav className="px-6 py-4 border-b border-gray-200">
         <div className="flex justify-between items-center max-w-6xl mx-auto">
           <a href="/" className="flex items-center gap-2 text-gray-900 hover:text-indigo-600 transition-colors">
@@ -15,9 +21,13 @@ export default function BlogIndex() {
             <span className="text-xl font-bold">VoltaHome</span>
           </a>
           <div className="flex items-center gap-4">
-            <a href="/" className="text-gray-600 hover:text-gray-900 transition-colors">
-              Home
-            </a>
+            {session ? (
+              <a href="/dashboard" className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                Dashboard
+              </a>
+            ) : (
+              <ButtonSignin />
+            )}
           </div>
         </div>
       </nav>
