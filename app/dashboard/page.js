@@ -136,6 +136,32 @@ export default function Dashboard() {
     }
   };
 
+  const deleteItem = async (itemId, itemName) => {
+  // Confirm before deleting
+  if (!confirm(`Are you sure you want to delete "${itemName}"? This cannot be undone.`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/items', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId })
+    });
+
+    if (response.ok) {
+      // Refresh items after successful delete
+      fetchItems();
+      alert('Item deleted successfully!');
+    } else {
+      throw new Error('Failed to delete item');
+    }
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    alert('Error deleting item. Please try again.');
+  }
+};
+
   const urgentItems = getUrgentItems();
   const itemsByRoom = getItemsByRoom();
 
@@ -279,7 +305,17 @@ export default function Dashboard() {
                       <div className="px-6 pb-4 bg-gray-50">
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4">
                           {roomItems.map(item => (
-                            <div key={item._id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                            <div key={item._id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow relative">
+                              
+                              {/* Delete Button - Always Visible (Mobile Friendly) */}
+                              <button
+                                onClick={() => deleteItem(item._id, item.name)}
+                                className="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors"
+                                title="Delete item"
+                              >
+                                🗑️
+                              </button>
+
                               <img 
                                 src={item.image} 
                                 alt={item.name}
@@ -295,12 +331,12 @@ export default function Dashboard() {
                                 }`}></span>
                                 <span className="text-xs text-gray-600">
                                   {item.status === 'replace' ? 'Replace' :
-                                   item.status === 'warning' ? 'Check Soon' : 'Good'}
+                                  item.status === 'warning' ? 'Check Soon' : 'Good'}
                                 </span>
                               </div>
-                                <p className="text-xs text-gray-500">
-                                  {deviceLabels[item.itemType] || deviceLabels[item.batteryType] || deviceLabels[item.maintenanceType] || 'Unknown device'}
-                                </p>
+                              <p className="text-xs text-gray-500">
+                                {deviceLabels[item.itemType] || deviceLabels[item.batteryType] || deviceLabels[item.maintenanceType] || 'Unknown device'}
+                              </p>
                             </div>
                           ))}
                         </div>
