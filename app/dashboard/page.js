@@ -51,6 +51,25 @@ export default function Dashboard() {
   'other': '📦 Other Device',
   };
 
+  const deviceGuides = {
+    // For now, everything points to main blog - super simple!
+    'smoke_detector': '/blog',
+    'carbon_monoxide_detector': '/blog',
+    'ac_filter': '/blog',
+    'furnace_filter': '/blog',
+    'air_purifier_filter': '/blog',
+    'remote': '/blog',
+    'wireless_mouse': '/blog',
+    'garage_door_remote': '/blog',
+    'dishwasher_filter': '/blog',
+    'refrigerator_filter': '/blog',
+    'dryer_vent': '/blog',
+    'flashlight': '/blog',
+    'thermostat': '/blog',
+    'other': '/blog'
+  };
+
+
   // Load items from API
   useEffect(() => {
     fetchItems();
@@ -226,12 +245,24 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => markAsChanged(item._id)}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                  >
-                    Mark Changed
-                  </button>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => markAsChanged(item._id)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                    >
+                      Mark Changed
+                    </button>
+                    
+                    {/* How-To Guide Button - Links to Blog */}
+                    <button 
+                      onClick={() => router.push('/blog')}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                    >
+                      📖 How-To Guides
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -337,6 +368,15 @@ export default function Dashboard() {
                               <p className="text-xs text-gray-500">
                                 {deviceLabels[item.itemType] || deviceLabels[item.batteryType] || deviceLabels[item.maintenanceType] || 'Unknown device'}
                               </p>
+                              {/* How-To Guide Link for items that need attention */}
+                              {(item.statusColor === 'red' || item.statusColor === 'yellow') && (
+                                <button 
+                                  onClick={() => router.push('/blog')}
+                                  className="w-full bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-medium hover:bg-blue-100 transition-colors"
+                                >
+                                  📖 How-To Guides
+                                </button>
+                              )}
                             </div>
                           ))}
                         </div>
