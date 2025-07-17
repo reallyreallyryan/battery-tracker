@@ -65,10 +65,26 @@ export default function Dashboard() {
     'refrigerator_filter': '/blog',
     'dryer_vent': '/blog',
     'flashlight': '/blog',
-    'thermostat': '/blog',
     'other': '/blog'
   };
 
+  const calculateItemStatus = (item) => {
+    if (!item.dateLastChanged) {
+      return { daysSinceChange: 0, usagePercentage: 0 };
+    }
+
+    const today = new Date();
+    const changeDate = new Date(item.dateLastChanged);
+    today.setHours(0, 0, 0, 0);
+    changeDate.setHours(0, 0, 0, 0);
+    const daysSinceChange = Math.floor((today - changeDate) / (1000 * 60 * 60 * 24));
+
+    // Use the expectedDuration that's already saved in the item!
+    const expectedLife = item.expectedDuration || 365;
+    const usagePercentage = Math.min(Math.round((daysSinceChange / expectedLife) * 100), 100);
+
+    return { daysSinceChange, usagePercentage };
+  };
 
   // Load items from API
   useEffect(() => {
@@ -221,8 +237,10 @@ export default function Dashboard() {
               </h2>
             </div>
             <div className="p-6 space-y-4">
-              {urgentItems.map(item => (
-                <div key={item._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              {urgentItems.map(item => {
+                const { daysSinceChange, usagePercentage } = calculateItemStatus(item);
+                return (
+                  <div key={item._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                   <div className="flex items-center gap-4">
                     <img 
                       src={item.image} 
@@ -234,14 +252,20 @@ export default function Dashboard() {
                       <p className="text-sm text-gray-600">
                         {roomLabels[item.room] || roomLabels.unspecified}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`inline-block w-3 h-3 rounded-full ${
-                          item.statusColor === 'red' ? 'bg-red-500' :
-                          item.statusColor === 'yellow' ? 'bg-yellow-500' : 'bg-green-500'
-                        }`}></span>
-                        <span className="text-sm font-medium">
-                          {item.statusColor === 'red' ? 'Needs replacement' : 'Check soon'}
-                        </span>
+                      <div className="mt-2">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-gray-600">Changed {daysSinceChange} days ago</span>
+                          <span className="text-xs text-gray-500">{usagePercentage}% used</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              usagePercentage >= 90 ? 'bg-red-500' :
+                              usagePercentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -264,7 +288,8 @@ export default function Dashboard() {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -335,7 +360,9 @@ export default function Dashboard() {
                     {isExpanded && (
                       <div className="px-6 pb-4 bg-gray-50">
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4">
-                          {roomItems.map(item => (
+                          {roomItems.map(item => {
+                            const { daysSinceChange, usagePercentage } = calculateItemStatus(item);
+                            return (
                             <div key={item._id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow relative">
                               
                               {/* Delete Button - Always Visible (Mobile Friendly) */}
@@ -355,15 +382,20 @@ export default function Dashboard() {
                               <h4 className="font-medium text-gray-900 text-sm mb-1 truncate">
                                 {item.name}
                               </h4>
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className={`inline-block w-2 h-2 rounded-full ${
-                                  item.statusColor === 'red' ? 'bg-red-500' :
-                                  item.statusColor === 'yellow' ? 'bg-yellow-500' : 'bg-green-500'
-                                }`}></span>
-                                <span className="text-xs text-gray-600">
-                                  {item.status === 'replace' ? 'Replace' :
-                                  item.status === 'warning' ? 'Replace Soon' : 'Good'}
-                                </span>
+                              <div className="mb-2">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-xs text-gray-600">{daysSinceChange}d ago</span>
+                                  <span className="text-xs text-gray-500">{usagePercentage}%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                  <div 
+                                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                                      usagePercentage >= 90 ? 'bg-red-500' :
+                                      usagePercentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+                                    }`}
+                                    style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                                  />
+                                </div>
                               </div>
                               <p className="text-xs text-gray-500">
                                 {deviceLabels[item.itemType] || deviceLabels[item.batteryType] || deviceLabels[item.maintenanceType] || 'Unknown device'}
@@ -378,7 +410,8 @@ export default function Dashboard() {
                                 </button>
                               )}
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
