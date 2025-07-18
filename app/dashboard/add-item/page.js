@@ -164,7 +164,9 @@ export default function AddItem() {
     setIsAnalyzing(true);
     try {
       console.log('Loading AI model...');
-      const model = await cocoSsd.load();
+      const model = await cocoSsd.load({
+        modelUrl: 'https://tfhub.dev/tensorflow/tfjs-model/ssd_mobilenet_v2/1/default/1'
+      });
       
       // Create image element from captured photo
       const img = new Image();
