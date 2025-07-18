@@ -163,22 +163,37 @@ export default function AddItem() {
     
     setIsAnalyzing(true);
     try {
-      console.log('Loading AI model...');
-      const model = await cocoSsd.load();
+      console.log('Loading EfficientDet model...');
+      
+      // Load EfficientDet D0 model (fastest one)
+      const modelUrl = 'https://tfhub.dev/tensorflow/efficientdet/d0/1';
+      const model = await tf.loadGraphModel(modelUrl, {fromTFHub: true});
       
       // Create image element from captured photo
       const img = new Image();
       img.onload = async () => {
-        console.log('Analyzing image...');
-        const predictions = await model.detect(img);
-        console.log('AI detected:', predictions);
-        setDetectedObjects(predictions);
+        console.log('Analyzing image with EfficientDet...');
+        
+        // Preprocess image for EfficientDet
+        const tensor = tf.browser.fromPixels(img)
+          .resizeNearestNeighbor([512, 512]) // EfficientDet D0 input size
+          .expandDims(0)
+          .div(255.0);
+        
+        // Run prediction
+        const predictions = await model.predict(tensor).data();
+        console.log('EfficientDet predictions:', predictions);
+        
+        // For now, let's just see what we get
+        setDetectedObjects([{class: 'EfficientDet result', score: 0.99}]);
+        
+        tensor.dispose();
       };
       img.src = capturedImage;
       
     } catch (error) {
-      console.error('Error analyzing photo:', error);
-      alert('Error analyzing photo');
+      console.error('Error with EfficientDet:', error);
+      alert('Error analyzing photo with EfficientDet');
     } finally {
       setIsAnalyzing(false);
     }
