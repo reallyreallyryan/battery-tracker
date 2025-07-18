@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
-import * as tf from '@tensorflow/tfjs';
+import '@tensorflow/tfjs';
 
 export default function AddItem() {
   const router = useRouter();
@@ -163,43 +163,22 @@ export default function AddItem() {
     
     setIsAnalyzing(true);
     try {
-      console.log('Loading MobileNet model...');
-      
-      // Try MobileNet instead - it's simpler and should work better
-      const mobilenet = await tf.loadLayersModel('https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/classification/4', {fromTFHub: true});
+      console.log('Loading AI model...');
+      const model = await cocoSsd.load();
       
       // Create image element from captured photo
       const img = new Image();
       img.onload = async () => {
-        console.log('Analyzing image with MobileNet...');
-        
-        // Preprocess image
-        const tensor = tf.browser.fromPixels(img)
-          .resizeNearestNeighbor([224, 224])
-          .expandDims(0)
-          .div(255.0);
-        
-        // Run prediction
-        const predictions = await mobilenet.predict(tensor);
-        const probabilities = await predictions.data();
-        
-        console.log('MobileNet predictions:', probabilities);
-        
-        // For now, show top prediction
-        const maxIndex = probabilities.indexOf(Math.max(...probabilities));
-        setDetectedObjects([{
-          class: `Object detected (class ${maxIndex})`, 
-          score: probabilities[maxIndex]
-        }]);
-        
-        tensor.dispose();
-        predictions.dispose();
+        console.log('Analyzing image...');
+        const predictions = await model.detect(img);
+        console.log('AI detected:', predictions);
+        setDetectedObjects(predictions);
       };
       img.src = capturedImage;
       
     } catch (error) {
-      console.error('Error with MobileNet:', error);
-      alert('Error analyzing photo: ' + error.message);
+      console.error('Error analyzing photo:', error);
+      alert('Error analyzing photo');
     } finally {
       setIsAnalyzing(false);
     }
