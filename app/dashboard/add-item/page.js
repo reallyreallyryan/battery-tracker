@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
-import '@tensorflow/tfjs';
+import * as tf from '@tensorflow/tfjs';
 
 export default function AddItem() {
   const router = useRouter();
