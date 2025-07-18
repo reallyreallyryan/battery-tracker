@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import '@tensorflow/tfjs';
 
 export default function AddItem() {
   const router = useRouter();
@@ -11,6 +13,8 @@ export default function AddItem() {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [detectedObjects, setDetectedObjects] = useState([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // Simplified form data - just device type, room, name, and date
   const [formData, setFormData] = useState({
@@ -152,6 +156,32 @@ export default function AddItem() {
       
       return newData;
     });
+  };
+
+  const analyzePhoto = async () => {
+    if (!capturedImage) return;
+    
+    setIsAnalyzing(true);
+    try {
+      console.log('Loading AI model...');
+      const model = await cocoSsd.load();
+      
+      // Create image element from captured photo
+      const img = new Image();
+      img.onload = async () => {
+        console.log('Analyzing image...');
+        const predictions = await model.detect(img);
+        console.log('AI detected:', predictions);
+        setDetectedObjects(predictions);
+      };
+      img.src = capturedImage;
+      
+    } catch (error) {
+      console.error('Error analyzing photo:', error);
+      alert('Error analyzing photo');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   // Submit form - updated for new structure
@@ -301,12 +331,32 @@ export default function AddItem() {
                 alt="Captured device"
                 className="w-full h-64 object-cover rounded-lg mb-4"
               />
-              <button
-                onClick={retakePhoto}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg"
-              >
-                📷 Retake Photo
-              </button>
+              <div className="flex gap-2 justify-center mb-4">
+                <button
+                  onClick={retakePhoto}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg"
+                >
+                  📷 Retake Photo
+                </button>
+                <button
+                  onClick={analyzePhoto}
+                  disabled={isAnalyzing}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
+                >
+                  {isAnalyzing ? 'Analyzing...' : '🔍 Analyze Photo'}
+                </button>
+              </div>
+              
+              {detectedObjects.length > 0 && (
+                <div className="text-left bg-gray-100 p-4 rounded-lg">
+                  <h3 className="font-bold mb-2">🤖 AI Detected:</h3>
+                  {detectedObjects.map((obj, index) => (
+                    <div key={index} className="text-sm">
+                      {obj.class} ({Math.round(obj.score * 100)}% confident)
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
