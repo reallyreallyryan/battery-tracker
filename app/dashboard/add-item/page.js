@@ -163,37 +163,43 @@ export default function AddItem() {
     
     setIsAnalyzing(true);
     try {
-      console.log('Loading EfficientDet model...');
+      console.log('Loading MobileNet model...');
       
-      // Load EfficientDet D0 model (fastest one)
-      const modelUrl = 'https://tfhub.dev/tensorflow/efficientdet/d0/1';
-      const model = await tf.loadGraphModel(modelUrl, {fromTFHub: true});
+      // Try MobileNet instead - it's simpler and should work better
+      const mobilenet = await tf.loadLayersModel('https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/classification/4', {fromTFHub: true});
       
       // Create image element from captured photo
       const img = new Image();
       img.onload = async () => {
-        console.log('Analyzing image with EfficientDet...');
+        console.log('Analyzing image with MobileNet...');
         
-        // Preprocess image for EfficientDet
+        // Preprocess image
         const tensor = tf.browser.fromPixels(img)
-          .resizeNearestNeighbor([512, 512]) // EfficientDet D0 input size
+          .resizeNearestNeighbor([224, 224])
           .expandDims(0)
           .div(255.0);
         
         // Run prediction
-        const predictions = await model.predict(tensor).data();
-        console.log('EfficientDet predictions:', predictions);
+        const predictions = await mobilenet.predict(tensor);
+        const probabilities = await predictions.data();
         
-        // For now, let's just see what we get
-        setDetectedObjects([{class: 'EfficientDet result', score: 0.99}]);
+        console.log('MobileNet predictions:', probabilities);
+        
+        // For now, show top prediction
+        const maxIndex = probabilities.indexOf(Math.max(...probabilities));
+        setDetectedObjects([{
+          class: `Object detected (class ${maxIndex})`, 
+          score: probabilities[maxIndex]
+        }]);
         
         tensor.dispose();
+        predictions.dispose();
       };
       img.src = capturedImage;
       
     } catch (error) {
-      console.error('Error with EfficientDet:', error);
-      alert('Error analyzing photo with EfficientDet');
+      console.error('Error with MobileNet:', error);
+      alert('Error analyzing photo: ' + error.message);
     } finally {
       setIsAnalyzing(false);
     }
