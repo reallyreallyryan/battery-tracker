@@ -236,36 +236,42 @@ export default function Dashboard() {
       <div className="max-w-4xl mx-auto space-y-6">
         
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="VoltaHome Logo" className="w-8 h-8" />
-            <h1 className="text-2xl font-bold text-gray-900">VoltaHome Dashboard</h1>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <img src="/logo.png" alt="VoltaHome Logo" className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" />
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
+              <span className="hidden sm:inline">VoltaHome Dashboard</span>
+              <span className="sm:hidden">Dashboard</span>
+            </h1>
             {isAdmin && (
-              <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded">
+              <span className="bg-purple-100 text-purple-800 text-xs font-medium px-1.5 py-0.5 sm:px-2 sm:py-1 rounded flex-shrink-0">
                 Admin
               </span>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1 sm:gap-2 flex-wrap">
             {process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true' && isAdmin && (
               <button
                 onClick={() => router.push('/dashboard/analytics')}
-                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg"
+                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-1 px-2 sm:py-2 sm:px-4 rounded-lg text-sm sm:text-base"
               >
-                📊 Analytics
+                <span>📊</span>
+                <span className="hidden sm:inline ml-1">Analytics</span>
               </button>
             )}
             <button
               onClick={() => router.push('/dashboard/add-item')}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-2 sm:py-2 sm:px-4 rounded-lg text-sm sm:text-base"
             >
-              + Add Item
+              <span>+</span>
+              <span className="hidden sm:inline ml-1">Add Item</span>
             </button>
             <button
               onClick={() => signOut()}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 sm:py-2 sm:px-4 rounded-lg text-sm sm:text-base"
             >
-              Logout
+              <span>↗️</span>
+              <span className="hidden sm:inline ml-1">Logout</span>
             </button>
           </div>
         </div>
