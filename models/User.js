@@ -36,6 +36,11 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Admin access for analytics and admin features
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

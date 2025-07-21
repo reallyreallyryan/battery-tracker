@@ -16,6 +16,15 @@ export default function AddItem() {
   const [detectedObjects, setDetectedObjects] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
+  // Analytics tracking
+  const [sessionId] = useState(`${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [modelLoadTime, setModelLoadTime] = useState(null);
+  const [inferenceTime, setInferenceTime] = useState(null);
+  const [imageSize, setImageSize] = useState(null);
+  
+  // Feature flag for analytics
+  const ENABLE_ANALYTICS = process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true';
+  
   // Simplified form data - just device type, room, name, and date
   const [formData, setFormData] = useState({
     name: '',
@@ -130,6 +139,12 @@ export default function AddItem() {
       const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
       setCapturedImage(imageDataUrl);
       
+      // Track image dimensions for analytics
+      setImageSize({
+        width: video.videoWidth,
+        height: video.videoHeight
+      });
+      
       stopCamera();
     }
   }, [stopCamera]);
@@ -164,13 +179,19 @@ export default function AddItem() {
     setIsAnalyzing(true);
     try {
       console.log('Loading AI model...');
+      const modelStartTime = performance.now();
       const model = await cocoSsd.load();
+      const loadTime = performance.now() - modelStartTime;
+      setModelLoadTime(loadTime);
       
       // Create image element from captured photo
       const img = new Image();
       img.onload = async () => {
         console.log('Analyzing image...');
+        const inferenceStartTime = performance.now();
         const predictions = await model.detect(img);
+        const inferTime = performance.now() - inferenceStartTime;
+        setInferenceTime(inferTime);
         console.log('AI detected:', predictions);
         setDetectedObjects(predictions);
       };
@@ -213,6 +234,39 @@ export default function AddItem() {
     try {
       // Get device info for API compatibility
       const selectedDevice = deviceTypes.find(d => d.value === formData.deviceType);
+      
+      // Log analytics before saving (fire-and-forget)
+      if (ENABLE_ANALYTICS) {
+        const analyticsData = {
+          sessionId,
+          cocoDetections: detectedObjects.map(obj => ({
+            class: obj.class,
+            score: obj.score
+          })),
+          userSelection: {
+            deviceType: formData.deviceType,
+            deviceLabel: selectedDevice?.label || formData.deviceType,
+            wasFromAI: detectedObjects.length > 0,
+            manualEntry: !capturedImage,
+            aiSuggestionMatched: detectedObjects.some(obj => 
+              obj.class.toLowerCase().includes(formData.deviceType.toLowerCase()) ||
+              formData.deviceType.toLowerCase().includes(obj.class.toLowerCase())
+            )
+          },
+          performance: {
+            inferenceTime,
+            modelLoadTime,
+            imageSize
+          }
+        };
+        
+        // Fire and forget - don't await
+        fetch('/api/analytics/detection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(analyticsData)
+        }).catch(() => {}); // Silently ignore errors
+      }
       
       // Prepare data for your existing API
       const apiData = {

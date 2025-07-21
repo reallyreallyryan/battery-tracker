@@ -8,6 +8,8 @@ export default function Dashboard() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedRooms, setExpandedRooms] = useState({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCheckLoading, setAdminCheckLoading] = useState(true);
 
   // Room labels mapping
   const roomLabels = {
@@ -89,7 +91,25 @@ export default function Dashboard() {
   // Load items from API
   useEffect(() => {
     fetchItems();
+    checkAdminStatus();
   }, []);
+  
+  const checkAdminStatus = async () => {
+    try {
+      console.log('🔍 Checking admin status...');
+      const response = await fetch('/api/auth/check-admin');
+      const data = await response.json();
+      console.log('📊 Admin check response:', data);
+      console.log('🔑 Is Admin:', data.isAdmin);
+      console.log('🌍 Analytics enabled:', process.env.NEXT_PUBLIC_ENABLE_ANALYTICS);
+      setIsAdmin(data.isAdmin);
+    } catch (error) {
+      console.error('❌ Admin check failed:', error);
+      setIsAdmin(false);
+    } finally {
+      setAdminCheckLoading(false);
+    }
+  };
 
   const fetchItems = async () => {
     try {
@@ -219,13 +239,28 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="VoltaHome Logo" className="w-8 h-8" />
             <h1 className="text-2xl font-bold text-gray-900">VoltaHome Dashboard</h1>
+            {isAdmin && (
+              <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded">
+                Admin
+              </span>
+            )}
           </div>
-          <button
-            onClick={() => router.push('/dashboard/add-item')}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg"
-          >
-            + Add Item
-          </button>
+          <div className="flex gap-2">
+            {process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true' && isAdmin && (
+              <button
+                onClick={() => router.push('/dashboard/analytics')}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg"
+              >
+                📊 Analytics
+              </button>
+            )}
+            <button
+              onClick={() => router.push('/dashboard/add-item')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg"
+            >
+              + Add Item
+            </button>
+          </div>
         </div>
 
         {/* Urgent Items Section */}
