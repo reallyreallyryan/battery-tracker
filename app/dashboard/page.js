@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -259,6 +260,12 @@ export default function Dashboard() {
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg"
             >
               + Add Item
+            </button>
+            <button
+              onClick={() => signOut()}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg"
+            >
+              Logout
             </button>
           </div>
         </div>
